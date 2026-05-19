@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Estante</title>
+  <link rel="stylesheet" href="../css/Main.css">
+  <script type="module" src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.esm.js"></script>
+  <script nomodule src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@ionic/core@latest/css/ionic.bundle.css">
+</head>
+<body>
+<ion-app>
+  <ion-content fullscreen>
+    <header class="navbar">
+      <div class="logo">
+        <ion-icon name="book-outline"></ion-icon>
+        <span>Estante</span>
+      </div>
+      <a href="../index.html" class="btn-secondary">Voltar</a>
+    </header>
+
+    <main class="login-page">
+      <section class="login-card">
+        <div class="login-head">
+          <span>Entrar</span>
+          <h1>Faça login com Google para acessar sua estante.</h1>
+          <p>Use sua conta Google para ver seus livros, publicar anúncios e gerenciar trocas.</p>
+        </div>
+
+        <button id="loginBtn" class="btn-add">
+          <ion-icon name="logo-google"></ion-icon>
+          Entrar com Google
+        </button>
+      </section>
+    </main>
+  </ion-content>
+</ion-app>
+<script type="module" src="../js/login.js"></script>
+</body>
+</html>

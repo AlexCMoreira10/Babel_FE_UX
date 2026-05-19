@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalhes do Livro | Estante</title>
+  <link rel="stylesheet" href="../css/Main.css">
+  <script type="module" src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.esm.js"></script>
+  <script nomodule src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@ionic/core@latest/css/ionic.bundle.css">
+</head>
+
+<body>
+<ion-app>
+  <ion-content fullscreen>
+    <header class="navbar">
+      <div class="logo">
+        <ion-icon name="book-outline"></ion-icon>
+        <span>Estante</span>
+      </div>
+      <a href="../index.html" class="btn-secondary">Voltar</a>
+    </header>
+
+    <main>
+      <section class="detalhes-livro">
+        <div class="detalhes-container">
+          <div class="detalhes-imagem">
+            <div class="imagem-grande" id="imagemLivro"></div>
+          </div>
+
+          <div class="detalhes-info">
+            <div id="carregandoDetalhes" class="carregando">Carregando detalhes...</div>
+            
+            <div id="conteudoDetalhes" style="display: none;">
+              <h1 id="titulo"></h1>
+              <p class="autor-detalhes" id="autor"></p>
+              
+              <div class="info-basica">
+                <div class="info-item">
+                  <span class="label">Editora:</span>
+                  <p id="editora"></p>
+                </div>
+                <div class="info-item">
+                  <span class="label">Ano de Publicação:</span>
+                  <p id="anoPublicacao"></p>
+                </div>
+                <div class="info-item">
+                  <span class="label">Idioma:</span>
+                  <p id="idioma"></p>
+                </div>
+                <div class="info-item">
+                  <span class="label">Condição:</span>
+                  <p id="condicao"></p>
+                </div>
+              </div>
+
+              <div class="info-item full">
+                <span class="label">Gêneros:</span>
+                <div id="generos" class="generos-list"></div>
+              </div>
+
+              <div class="info-item full">
+                <span class="label">Descrição:</span>
+                <p id="descricao"></p>
+              </div>
+
+              <div class="info-item">
+                <span class="label">Tipo:</span>
+                <p id="tipo" class="tipo-badge"></p>
+              </div>
+
+              <div id="precoInfo" class="info-item" style="display: none;">
+                <span class="label">Preço:</span>
+                <p id="preco" class="preco-destaque"></p>
+              </div>
+
+              <div class="info-item">
+                <span class="label">Localização:</span>
+                <p id="localizacao">📍 <span></span></p>
+              </div>
+
+              <div class="info-anunciante">
+                <span class="label">Anunciante:</span>
+                <div class="usuario-card">
+                  <ion-icon name="person-circle-outline" size="large"></ion-icon>
+                  <div>
+                    <p id="nomeAnunciante" class="nome"></p>
+                    <p id="emailAnunciante" class="email"></p>
+                  </div>
+                </div>
+              </div>
+
+              <div id="trocasInfo" class="info-item full" style="display: none;">
+                <span class="label">Informações de Troca:</span>
+                <div class="trocas-box">
+                  <p id="aceitaRetirada"></p>
+                  <div id="interesses-troca" class="interesses"></div>
+                </div>
+              </div>
+
+              <button class="btn-primary">Entrar em Contato</button>
+            </div>
+
+            <div id="erroDetalhes" style="display: none;" class="erro-mensagem">
+              <p>Desculpe, não conseguimos carregar os detalhes do livro.</p>
+              <a href="../index.html" class="btn-secondary">Voltar ao Catálogo</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="recomendacoes">
+        <div class="recomendacoes-header">
+          <h2>Recomendações por Gênero</h2>
+          <p id="generoRecomendado"></p>
+        </div>
+
+        <div id="carregandoRecomendacoes" class="carregando">Carregando recomendações...</div>
+        <div id="gridRecomendacoes" class="grid-livros" style="display: none;"></div>
+        <div id="semRecomendacoes" style="display: none;" class="sem-dados">
+          <p>Não encontramos outras recomendações neste gênero.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-brand">
+        <h2><ion-icon name="book-outline"></ion-icon> Estante</h2>
+        <p>Troque histórias, compartilhe mundos. Uma plataforma para conectar leitores e valorizar livros usados.</p>
+      </div>
+      <div class="footer-links">
+        <h3>Links</h3>
+        <a href="../index.html">Catálogo</a>
+        <a href="../index.html">Sobre</a>
+        <a href="../index.html">Contato</a>
+      </div>
+    </footer>
+  </ion-content>
+</ion-app>
+
+<script type="module" src="../js/detalhes.js"></script>
+</body>
+</html>

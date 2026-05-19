@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perfil | Estante</title>
+  <link rel="stylesheet" href="../css/Main.css">
+  <script type="module" src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.esm.js"></script>
+  <script nomodule src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@ionic/core@latest/css/ionic.bundle.css">
+</head>
+<body>
+<ion-app>
+  <ion-content fullscreen>
+    <header class="navbar">
+      <div class="logo">
+        <ion-icon name="book-outline"></ion-icon>
+        <span>Estante</span>
+      </div>
+      <a href="../index.html" class="btn-secondary">Voltar</a>
+    </header>
+
+    <main class="form-page">
+      <section class="form-card profile-card">
+        <div>
+          <span>Meu Perfil</span>
+          <h1>Bem-vindo à sua estante</h1>
+          <p>Aqui você vê suas informações e pode gerir seus anúncios.</p>
+        </div>
+
+        <div class="profile-info">
+          <div class="profile-item">
+            <strong>Nome</strong>
+            <p id="perfilNome">Carregando...</p>
+          </div>
+          <div class="profile-item">
+            <strong>E-mail</strong>
+            <p id="perfilEmail">Carregando...</p>
+          </div>
+          <div class="profile-item">
+            <strong>ID</strong>
+            <p id="perfilUid">Carregando...</p>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button id="logoutBtn" type="button">Sair</button>
+          <a href="publicar.html" class="btn-secondary">Publicar novo livro</a>
+        </div>
+
+        <div class="profile-section">
+          <h2>Seus anúncios</h2>
+          <p>A lista de livros publicados aparecerá aqui em breve.</p>
+        </div>
+      </section>
+    </main>
+  </ion-content>
+</ion-app>
+<script type="module" src="../js/perfil.js"></script>
+</body>
+</html>
