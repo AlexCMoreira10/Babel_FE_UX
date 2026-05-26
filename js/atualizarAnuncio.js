@@ -1,6 +1,25 @@
-const URL_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
-  ? 'http://localhost:3000/api'
-  : 'https://babel-backend.onrender.com/api';
+const URL_BASE_LOCAL = 'http://localhost:3000/api';
+const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
+
+let URL_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
+  ? URL_BASE_LOCAL
+  : URL_BASE_REMOTE;
+
+async function fetchComFallback(url, options = {}) {
+  try {
+    const response = await fetch(url, options);
+    return response;
+  } catch (erro) {
+    if (URL_BASE === URL_BASE_LOCAL && url.includes(URL_BASE_LOCAL)) {
+      console.warn(`Falha ao conectar em ${URL_BASE_LOCAL}, tentando ${URL_BASE_REMOTE}...`);
+      URL_BASE = URL_BASE_REMOTE;
+      const urlRemota = url.replace(URL_BASE_LOCAL, URL_BASE_REMOTE);
+      return fetch(urlRemota, options);
+    }
+    throw erro;
+  }
+}
+
 const formAtualizar = document.getElementById('formAtualizar');
 const updateMessage = document.getElementById('updateMessage');
 const tituloInput = document.getElementById('titulo');
@@ -21,33 +40,10 @@ const aceitaRetiradaInput = document.getElementById('aceitaRetirada');
 
 function normalizeLivroData(data) {
   if (!data) return {};
-
-  if (Array.isArray(data)) {
-    return pickLivroFromArray(data);
-  }
-
-  if (data.livros) {
-    return normalizeLivroData(data.livros);
-  }
-
-  if (data.livro) {
-    return normalizeLivroData(data.livro);
-  }
-
-  if (data.data) {
-    return normalizeLivroData(data.data);
-  }
-
+  if (data.livro) return data.livro;
+  if (data.data?.livro) return data.data.livro;
+  if (data.data) return data.data;
   return data;
-}
-
-function pickLivroFromArray(arr) {
-  if (!Array.isArray(arr) || arr.length === 0) return {};
-  const match = arr.find((item) => {
-    const itemId = item._id || item.id || item.usuarioId || item.uid;
-    return String(itemId) === String(livroId);
-  });
-  return match || arr[0] || {};
 }
 
 function toStringArray(value) {
@@ -117,7 +113,7 @@ formAtualizar.addEventListener('submit', async (event) => {
   }
 
   try {
-    const response = await fetch(`${URL_BASE}/livros/${livroId}`, {
+    const response = await fetchComFallback(`${URL_BASE}/livros/${livroId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -147,7 +143,7 @@ async function carregarLivro() {
       return;
     }
 
-    const response = await fetch(`${URL_BASE}/livros/${livroId}`, {
+    const response = await fetchComFallback(`${URL_BASE}/livros/${livroId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -160,22 +156,20 @@ async function carregarLivro() {
     }
 
     const data = await response.json();
-    const livro = normalizeLivroData(data);
-    console.log('Dados do livro para edição:', livro);
+    const livro = data.livro || data;
 
-    tituloInput.value = livro.titulo || livro.title || '';
-    autorInput.value = livro.autor || livro.author || '';
-    editoraInput.value = livro.editora || livro.publisher || livro.editora || '';
-    anoInput.value = livro.anoPublicacao ?? livro.ano ?? livro.year ?? '';
-    idiomaInput.value = livro.idioma || livro.language || '';
+    tituloInput.value = livro.titulo || '';
+    autorInput.value = livro.autor || '';
+    editoraInput.value = livro.editora || '';
+    anoInput.value = livro.anoPublicacao || '';
+    idiomaInput.value = livro.idioma || '';
     condicaoSelect.value = livro.condicao || '';
     tipoSelect.value = livro.tipo || '';
-    localizacaoInput.value = livro.localizacao || livro.location || '';
-    descricaoInput.value = livro.descricao || livro.description || '';
-    fotosInput.value = toStringArray(livro.fotos || livro.imagem || livro.foto).join(', ');
-    generosInput.value = toStringArray(livro.generos || livro.genero).join(', ');
-    const trocasInteresses = toStringArray(livro.trocas?.interesses || livro.trocas);
-    trocasInput.value = trocasInteresses.join(', ');
+    localizacaoInput.value = livro.localizacao || '';
+    descricaoInput.value = livro.descricao || '';
+    fotosInput.value = Array.isArray(livro.fotos) ? livro.fotos.join(', ') : livro.fotos || '';
+    generosInput.value = Array.isArray(livro.generos) ? livro.generos.join(', ') : livro.generos || '';
+    trocasInput.value = Array.isArray(livro.trocas?.interesses) ? livro.trocas.interesses.join(', ') : livro.trocas?.interesses || '';
     aceitaRetiradaInput.checked = livro.trocas?.aceitaRetirada ?? false;
     precoInput.value = livro.preco ?? '';
 

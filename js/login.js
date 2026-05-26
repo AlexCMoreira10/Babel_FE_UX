@@ -25,7 +25,7 @@ let token = null;
 
 /* URL DO BACKEND pode ser alterada conforme necessário */
 // const URL_BASE = "http://localhost:3000/api";
-// const URL_BASE = "https://babel-backend.onrender.com/api";
+// const URL_BASE = "https://babel-be-lovat.vercel.app/api";
 
 /* BOTÃO */
 const loginBtn = document.getElementById("loginBtn");

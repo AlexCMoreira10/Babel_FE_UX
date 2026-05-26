@@ -1,6 +1,24 @@
-const URL_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
-  ? 'http://localhost:3000/api'
-  : 'https://babel-backend.onrender.com/api';
+const URL_BASE_LOCAL = 'http://localhost:3000/api';
+const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
+
+let URL_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
+  ? URL_BASE_LOCAL
+  : URL_BASE_REMOTE;
+
+async function fetchComFallback(url, options = {}) {
+  try {
+    const response = await fetch(url, options);
+    return response;
+  } catch (erro) {
+    if (URL_BASE === URL_BASE_LOCAL && url.includes(URL_BASE_LOCAL)) {
+      console.warn(`Falha ao conectar em ${URL_BASE_LOCAL}, tentando ${URL_BASE_REMOTE}...`);
+      URL_BASE = URL_BASE_REMOTE;
+      const urlRemota = url.replace(URL_BASE_LOCAL, URL_BASE_REMOTE);
+      return fetch(urlRemota, options);
+    }
+    throw erro;
+  }
+}
 
 // Pega o ID do livro da URL
 const params = new URLSearchParams(window.location.search);
@@ -70,7 +88,7 @@ async function carregarDetalhesLivro() {
     console.log('URL da requisição:', url);
     console.log('Headers:', headers);
 
-    const resposta = await fetch(url, {
+    const resposta = await fetchComFallback(url, {
       headers: headers
     });
 
@@ -318,7 +336,7 @@ async function carregarRecomendacoes(genero) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const resposta = await fetch(`${URL_BASE}/livros/busca/genero?genero=${encodeURIComponent(genero)}`, {
+    const resposta = await fetchComFallback(`${URL_BASE}/livros/busca/genero?genero=${encodeURIComponent(genero)}`, {
       headers: headers
     });
 

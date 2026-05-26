@@ -6,9 +6,27 @@ const refreshAdsBtn = document.getElementById('refreshAdsBtn');
 const profileAdsGrid = document.getElementById('profileAdsGrid');
 const profileSectionMessage = document.getElementById('profileSectionMessage');
 
-const URL_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
-  ? 'http://localhost:3000/api'
-  : 'https://babel-backend.onrender.com/api';
+const URL_BASE_LOCAL = 'http://localhost:3000/api';
+const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
+
+let URL_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
+  ? URL_BASE_LOCAL
+  : URL_BASE_REMOTE;
+
+async function fetchComFallback(url, options = {}) {
+  try {
+    const response = await fetch(url, options);
+    return response;
+  } catch (erro) {
+    if (URL_BASE === URL_BASE_LOCAL && url.includes(URL_BASE_LOCAL)) {
+      console.warn(`Falha ao conectar em ${URL_BASE_LOCAL}, tentando ${URL_BASE_REMOTE}...`);
+      URL_BASE = URL_BASE_REMOTE;
+      const urlRemota = url.replace(URL_BASE_LOCAL, URL_BASE_REMOTE);
+      return fetch(urlRemota, options);
+    }
+    throw erro;
+  }
+}
 
 function carregarPerfil() {
   const usuarioStr = localStorage.getItem('usuario');
@@ -44,11 +62,11 @@ async function carregarAnuncios(usuario) {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   try {
-    const resposta = await fetch(`${URL_BASE}/livros?usuarioId=${encodeURIComponent(usuario.uid)}`, { headers });
+    const resposta = await fetchComFallback(`${URL_BASE}/livros?usuarioId=${encodeURIComponent(usuario.uid)}`, { headers });
     let dados;
     if (!resposta.ok) {
       console.warn('Filtro por usuarioId falhou, tentando buscar todos os anúncios:', resposta.status);
-      const fallbackResposta = await fetch(`${URL_BASE}/livros`, { headers });
+      const fallbackResposta = await fetchComFallback(`${URL_BASE}/livros`, { headers });
       if (!fallbackResposta.ok) {
         throw new Error(`Falha na busca fallback: ${fallbackResposta.status}`);
       }

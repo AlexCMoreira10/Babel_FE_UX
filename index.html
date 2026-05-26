@@ -160,9 +160,30 @@
 </ion-app>
 
 <script>
-const URL_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
-  ? 'http://localhost:3000/api'
-  : 'https://babel-backend.onrender.com/api';
+const URL_BASE_LOCAL = 'http://localhost:3000/api';
+const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
+
+// Determina qual URL usar: localhost se estiver rodando localmente, caso contrário remoto
+let URL_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
+  ? URL_BASE_LOCAL
+  : URL_BASE_REMOTE;
+
+// Função helper para fazer fetch com fallback automático
+async function fetchComFallback(url, options = {}) {
+  try {
+    const response = await fetch(url, options);
+    return response;
+  } catch (erro) {
+    // Se URL usada foi a local e falhou, tenta remota
+    if (URL_BASE === URL_BASE_LOCAL && url.includes(URL_BASE_LOCAL)) {
+      console.warn(`Falha ao conectar em ${URL_BASE_LOCAL}, tentando ${URL_BASE_REMOTE}...`);
+      URL_BASE = URL_BASE_REMOTE;
+      const urlRemota = url.replace(URL_BASE_LOCAL, URL_BASE_REMOTE);
+      return fetch(urlRemota, options);
+    }
+    throw erro;
+  }
+}
 
 let livros = [
   {
@@ -282,7 +303,7 @@ async function buscarLivrosApi(page = 1) {
       if (carregandoEstante) carregandoEstante.style.display = 'flex';
     }, 700);
 
-    const resposta = await fetch(`${URL_BASE}/livros?page=${page}&limit=${pageSize}`, {
+    const resposta = await fetchComFallback(`${URL_BASE}/livros?page=${page}&limit=${pageSize}`, {
       headers: headers
     });
     clearTimeout(showTimer);
@@ -371,7 +392,7 @@ async function fetchFiltered(page = 1) {
     const url = `${URL_BASE}/livros?${params.toString()}`;
     console.log('Fetch filtered URL:', url);
 
-    const resposta = await fetch(url, { headers });
+    const resposta = await fetchComFallback(url, { headers });
     clearTimeout(showTimer);
     if (carregandoEstante) carregandoEstante.style.display = 'none';
 
