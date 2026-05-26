@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atualizar Anúncio | Estante</title>
+  <link rel="stylesheet" href="../css/Main.css">
+  <script type="module" src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.esm.js"></script>
+  <script nomodule src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@ionic/core@latest/css/ionic.bundle.css">
+</head>
+<body>
+<ion-app>
+  <ion-content fullscreen>
+    <header class="navbar">
+      <div class="logo">
+        <ion-icon name="book-outline"></ion-icon>
+        <span>Estante</span>
+      </div>
+      <a href="./perfil.html" class="btn-secondary">Voltar</a>
+    </header>
+
+    <main class="form-page">
+      <section class="form-card">
+        <div>
+          <span>Atualizar</span>
+          <h1>Edite os dados do seu anúncio</h1>
+          <p>Faça ajustes no título, preço, descrição e imagens do seu livro.</p>
+        </div>
+
+        <div id="updateMessage" class="info-text">Carregando dados do anúncio...</div>
+
+        <form id="formAtualizar" class="form-grid" style="display:none;">
+          <div class="form-group">
+            <label for="titulo">Título</label>
+            <input id="titulo" name="titulo" type="text" required>
+          </div>
+
+          <div class="form-group">
+            <label for="autor">Autor</label>
+            <input id="autor" name="autor" type="text" required>
+          </div>
+
+          <div class="form-group">
+            <label for="editora">Editora</label>
+            <input id="editora" name="editora" type="text">
+          </div>
+
+          <div class="form-group">
+            <label for="anoPublicacao">Ano de publicação</label>
+            <input id="anoPublicacao" name="anoPublicacao" type="number" min="1500" max="2100">
+          </div>
+
+          <div class="form-group">
+            <label for="idioma">Idioma</label>
+            <input id="idioma" name="idioma" type="text" placeholder="Português">
+          </div>
+
+          <div class="form-group">
+            <label for="condicao">Condição</label>
+            <select id="condicao" name="condicao" required>
+              <option value="" disabled selected>Selecione</option>
+              <option value="novo">Novo</option>
+              <option value="bom">Bom</option>
+              <option value="regular">Regular</option>
+              <option value="usado">Usado</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="tipo">Tipo de anúncio</label>
+            <select id="tipo" name="tipo" required>
+              <option value="" disabled selected>Selecione</option>
+              <option value="doacao">Doação</option>
+              <option value="troca">Troca</option>
+              <option value="venda">Venda</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="precoGroup" style="display:none;">
+            <label for="preco">Preço (R$)</label>
+            <input id="preco" name="preco" type="number" step="0.01" min="0">
+            <span class="small-text">Preencha apenas para anúncios de venda.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="generos">Gêneros</label>
+            <input id="generos" name="generos" type="text" placeholder="Romance, Fantasia">
+            <span class="small-text">Separe por vírgulas.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="localizacao">Localização</label>
+            <input id="localizacao" name="localizacao" type="text" placeholder="São Paulo - SP" required>
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="descricao">Descrição</label>
+            <textarea id="descricao" name="descricao" placeholder="Descreva estado, capa, páginas e detalhes do exemplar..." required></textarea>
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="fotos">Fotos</label>
+            <input id="fotos" name="fotos" type="text" placeholder="https://... , https://...">
+            <span class="small-text">Cole URLs separados por vírgula.</span>
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="trocasInteresses">Interesses para troca</label>
+            <input id="trocasInteresses" name="trocasInteresses" type="text" placeholder="Romance, História">
+            <span class="small-text">Preencha apenas se for anúncio de troca.</span>
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1; display:flex; align-items:center; gap:12px;">
+            <input id="aceitaRetirada" name="aceitaRetirada" type="checkbox">
+            <label for="aceitaRetirada">Aceita retirada em mãos</label>
+          </div>
+
+          <div class="form-actions" style="grid-column: 1 / -1;">
+            <button type="submit">Salvar alterações</button>
+            <a href="./perfil.html" class="btn-secondary">Cancelar</a>
+          </div>
+        </form>
+      </section>
+    </main>
+  </ion-content>
+</ion-app>
+<script type="module" src="../js/atualizarAnuncio.js"></script>
+</body>
+</html>

@@ -26,6 +26,8 @@
         <div class="detalhes-container">
           <div class="detalhes-imagem">
             <div class="imagem-grande" id="imagemLivro"></div>
+            <div id="thumbnailsContainer" class="thumbnails" style="display:none; margin-top:12px;"></div>
+            <button id="verMaisImagensBtn" class="btn-secondary" style="margin-top:12px; display:none;">Ver outras imagens</button>
           </div>
 
           <div class="detalhes-info">
@@ -137,6 +139,17 @@
     </footer>
   </ion-content>
 </ion-app>
+
+<!-- Gallery modal -->
+<div id="galleryModal" class="gallery-modal" style="display:none;">
+  <div class="gallery-overlay"></div>
+  <div class="gallery-content">
+    <button id="galleryClose" class="btn-secondary">Fechar</button>
+    <button id="galleryPrev" class="btn-secondary">◀</button>
+    <img id="galleryImage" src="" alt="Imagem do livro">
+    <button id="galleryNext" class="btn-secondary">▶</button>
+  </div>
+</div>
 
 <script type="module" src="../js/detalhes.js"></script>
 </body>

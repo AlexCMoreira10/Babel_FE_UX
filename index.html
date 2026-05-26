@@ -105,6 +105,7 @@
           <div class="campo-busca">
             <ion-icon name="search-outline"></ion-icon>
             <input type="text" id="pesquisa" placeholder="Buscar por título ou autor...">
+            <button id="searchBtn" class="btn-add">Pesquisar</button>
           </div>
 
           <div class="filtros">
@@ -120,10 +121,21 @@
             <span class="section-label">Catálogo</span>
             <h2>Livros disponíveis</h2>
           </div>
-          <span id="contador-livros">8 itens encontrados</span>
+          <span id="contador-livros">0 itens encontrados</span>
         </div>
 
-        <section class="grid-livros"></section>
+        <div id="carregandoEstante" class="carregando" style="display:none;">Aguarde enquanto carregamos a sua estante...</div>
+          <div id="authBanner" style="display:none; margin:16px 0;" class="erro-mensagem">
+            <p>Sua sessão expirou ou você não está autenticado. <a href="./html/login.html" style="font-weight:700; color:inherit; text-decoration:underline;">Entrar com Google</a></p>
+          </div>
+
+        <section id="gridLivros" class="grid-livros"></section>
+
+        <div class="paginacao" id="paginacao">
+          <button id="prevPage" class="btn-secondary">Anterior</button>
+          <span id="pageIndicator">Página 1</span>
+          <button id="nextPage" class="btn-add">Próxima</button>
+        </div>
       </section>
     </main>
 
@@ -243,25 +255,53 @@ let livros = [
   }
 ];
 
-const grid = document.querySelector('.grid-livros');
+const grid = document.getElementById('gridLivros') || document.querySelector('.grid-livros');
 const input = document.getElementById('pesquisa');
+const searchBtn = document.getElementById('searchBtn');
 const botoes = document.querySelectorAll('.filtros button');
 const contador = document.getElementById('contador-livros');
 let tipoSelecionado = 'todos';
+// paginação
+let currentPage = 1;
+const pageSize = 16;
+let serverMode = true; // se true, buscamos páginas do backend
+let lastFetchedCount = 0;
+const carregandoEstante = document.getElementById('carregandoEstante');
+const prevPageBtn = document.getElementById('prevPage');
+const nextPageBtn = document.getElementById('nextPage');
+const pageIndicator = document.getElementById('pageIndicator');
 
-async function buscarLivrosApi() {
+async function buscarLivrosApi(page = 1) {
   try {
     const token = localStorage.getItem('token');
     const headers = {};
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const resposta = await fetch(`${URL_BASE}/livros`, {
+    // mostra mensagem de carregamento se demorar
+    let showTimer = setTimeout(() => {
+      if (carregandoEstante) carregandoEstante.style.display = 'flex';
+    }, 700);
+
+    const resposta = await fetch(`${URL_BASE}/livros?page=${page}&limit=${pageSize}`, {
       headers: headers
     });
+    clearTimeout(showTimer);
+    if (carregandoEstante) carregandoEstante.style.display = 'none';
     
+      // tratar auth errors explicitamente
+      if (resposta.status === 401 || resposta.status === 403) {
+        console.warn('Requisição não autorizada (401/403).');
+        const authBanner = document.getElementById('authBanner');
+        if (authBanner) authBanner.style.display = 'block';
+        if (page === 1) {
+          serverMode = false;
+          currentPage = 1;
+          filtrarLivros();
+          return;
+        }
+        throw new Error(`Status ${resposta.status}`);
+      }
+
     if (!resposta.ok) {
       throw new Error(`Status ${resposta.status}`);
     }
@@ -270,34 +310,155 @@ async function buscarLivrosApi() {
     console.log('Resposta da API:', dados);
 
     // Aceita varios formatos de resposta
-    if (Array.isArray(dados)) {
-      livros = dados;
-    } else if (Array.isArray(dados.livros)) {
-      livros = dados.livros;
-    } else if (Array.isArray(dados.dados)) {
-      livros = dados.dados;
-    } else if (Array.isArray(dados.data)) {
-      livros = dados.data;
-    } else {
-      console.warn('Formato de resposta inesperado da API:', dados);
-      livros = [];
+    let lista = [];
+    if (Array.isArray(dados)) lista = dados;
+    else if (Array.isArray(dados.livros)) lista = dados.livros;
+    else if (Array.isArray(dados.dados)) lista = dados.dados;
+    else if (Array.isArray(dados.data)) lista = dados.data;
+    else lista = [];
+
+    // se nada encontrado na primeira página, usa fallback local
+    if (page === 1 && lista.length === 0) {
+      console.warn('API retornou vazio; usando dados locais de fallback');
+      serverMode = false;
+      currentPage = 1;
+      filtrarLivros();
+      return;
     }
-    
-    console.log(`Carregados ${livros.length} livros`);
+
+    // servidor retornou resultados (página)
+    serverMode = true;
+    lastFetchedCount = lista.length;
+    renderServerBooks(lista);
+    updatePaginationButtons();
+    console.log(`Carregados ${lista.length} livros (página ${page})`);
   } catch (erro) {
     console.warn('Não foi possível carregar livros da API:', erro);
+    // fallback para local se página 1
+    if (page === 1) {
+      serverMode = false;
+      currentPage = 1;
+      filtrarLivros();
+      return;
+    }
   } finally {
-    console.log('Livros finais a renderizar:', livros.map(l => ({ id: l.id || l._id, titulo: l.titulo })));
-    filtrarLivros();
+    console.log('Busca concluída');
   }
+}
+
+// Busca aplicada ao backend com filtros e termo de pesquisa
+async function fetchFiltered(page = 1) {
+  try {
+    const token = localStorage.getItem('token');
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const termo = (input.value || '').trim();
+    const params = new URLSearchParams();
+    params.set('page', page);
+    params.set('limit', pageSize);
+    if (tipoSelecionado && tipoSelecionado !== 'todos') params.set('tipo', tipoSelecionado);
+    if (termo) {
+      // envia termo tanto em titulo quanto em autor para aumentar chance de match
+      params.set('titulo', termo);
+      params.set('autor', termo);
+    }
+
+    let showTimer = setTimeout(() => {
+      if (carregandoEstante) carregandoEstante.style.display = 'flex';
+    }, 700);
+
+    const url = `${URL_BASE}/livros?${params.toString()}`;
+    console.log('Fetch filtered URL:', url);
+
+    const resposta = await fetch(url, { headers });
+    clearTimeout(showTimer);
+    if (carregandoEstante) carregandoEstante.style.display = 'none';
+
+    if (resposta.status === 401 || resposta.status === 403) {
+      const authBanner = document.getElementById('authBanner');
+      if (authBanner) authBanner.style.display = 'block';
+      serverMode = false;
+      currentPage = 1;
+      filtrarLivros();
+      return;
+    }
+
+    if (!resposta.ok) throw new Error(`Status ${resposta.status}`);
+
+    const dados = await resposta.json();
+    console.log('Resposta da API (filtrada):', dados);
+
+    let lista = [];
+    if (Array.isArray(dados)) lista = dados;
+    else if (Array.isArray(dados.livros)) lista = dados.livros;
+    else if (Array.isArray(dados.dados)) lista = dados.dados;
+    else if (Array.isArray(dados.data)) lista = dados.data;
+
+    if (page === 1 && lista.length === 0) {
+      console.warn('API filtrada retornou vazio; usando fallback local');
+      serverMode = false;
+      currentPage = 1;
+      filtrarLivros();
+      return;
+    }
+
+    serverMode = true;
+    lastFetchedCount = lista.length;
+    renderServerBooks(lista);
+    updatePaginationButtons();
+  } catch (erro) {
+    console.warn('Erro ao buscar filtrado no backend:', erro);
+    if (page === 1) {
+      serverMode = false;
+      currentPage = 1;
+      filtrarLivros();
+    }
+  }
+}
+
+// debounce helper
+function debounce(fn, wait) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), wait);
+  };
+}
+
+function renderServerBooks(arr) {
+  grid.innerHTML = arr.map(criarCard).join('');
+  atualizarContador(arr.length);
+  pageIndicator.textContent = `Página ${currentPage}`;
+}
+
+function updatePaginationButtons() {
+  if (prevPageBtn) prevPageBtn.disabled = currentPage <= 1;
+  if (nextPageBtn) nextPageBtn.disabled = lastFetchedCount < pageSize;
+  if (pageIndicator) pageIndicator.textContent = `Página ${currentPage}`;
 }
 
 function formatarPreco(valor) {
   return valor === null ? '' : `R$ ${valor.toFixed(2).replace('.', ',')}`;
 }
 
+function extrairUrlImagem(valor) {
+  if (!valor) return '';
+  if (typeof valor === 'string') return valor;
+  if (Array.isArray(valor)) return valor.length ? extrairUrlImagem(valor[0]) : '';
+  if (typeof valor === 'object') {
+    return valor.url || valor.secure_url || valor.src || valor.path || valor.location || valor.filename || '';
+  }
+  return '';
+}
+
+function obterImagemLivro(livro) {
+  const imagem = extrairUrlImagem(livro.fotos ?? livro.imagem ?? livro.foto ?? null);
+  return imagem || 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80';
+}
+
 window.salvarLivroSelecionado = function(id) {
-  const livro = livros.find(l => (l._id || l.id) === id || l.usuarioId === id);
+  const livro = livros.find(l => (l._id || l.id) === id);
   if (livro) {
     sessionStorage.setItem('livroSelecionado', JSON.stringify(livro));
     console.log('Livro selecionado salvo para detalhes:', livro);
@@ -306,9 +467,12 @@ window.salvarLivroSelecionado = function(id) {
 
 function criarCard(livro) {
   const tipo = livro.tipo || 'troca';
-  const imagem = livro.imagem || livro.fotos?.[0] || 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80';
+  const imagem = obterImagemLivro(livro);
   const usuarioNome = livro.usuario?.displayName || livro.usuario?.nome || livro.usuario || livro.usuarioId || 'Anunciante';
-  const livroId = livro._id || livro.id || livro.usuarioId || '';
+  const livroId = livro._id || livro.id || '';
+  const detalhesHref = livroId ? `./html/detalhes.html?id=${livroId}` : '#';
+  const detalhesOnclick = livroId ? `onclick="window.salvarLivroSelecionado('${livroId}')"` : '';
+  const detalhesLabel = livroId ? 'Detalhes' : 'Sem detalhes';
   console.log('Gerando link de detalhes:', { titulo: livro.titulo, livroId });
 
   return `
@@ -322,7 +486,7 @@ function criarCard(livro) {
         <p class="condicao">Estado: ${livro.condicao || 'Bom'}${livro.preco ? ` • ${formatarPreco(livro.preco)}` : ''}</p>
         <p class="localizacao">📍 ${livro.localizacao || 'Local não informado'}</p>
         <p class="usuario">👤 ${usuarioNome}</p>
-        <a href="./html/detalhes.html?id=${livroId}" class="btn-detalhes" onclick="window.salvarLivroSelecionado('${livroId}')">Detalhes</a>
+        <a href="${detalhesHref}" class="btn-detalhes" ${detalhesOnclick}>${detalhesLabel}</a>
       </div>
     </article>
   `;
@@ -333,6 +497,7 @@ function atualizarContador(total) {
 }
 
 function filtrarLivros() {
+  // aplica filtros sobre os dados locais (fallback)
   const termo = input.value.trim().toLowerCase();
   const filtrados = livros.filter(livro => {
     const matchTipo = tipoSelecionado === 'todos' || livro.tipo === tipoSelecionado;
@@ -341,18 +506,74 @@ function filtrarLivros() {
     return matchTipo && matchTexto;
   });
 
-  grid.innerHTML = filtrados.map(criarCard).join('');
-  atualizarContador(filtrados.length);
+  // paginação local
+  const total = filtrados.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (currentPage > totalPages) currentPage = totalPages;
+
+  const start = (currentPage - 1) * pageSize;
+  const pageItems = filtrados.slice(start, start + pageSize);
+
+  grid.innerHTML = pageItems.map(criarCard).join('');
+  atualizarContador(total);
+
+  // atualizar controles
+  if (pageIndicator) pageIndicator.textContent = `Página ${currentPage} / ${totalPages}`;
+  if (prevPageBtn) prevPageBtn.disabled = currentPage <= 1;
+  if (nextPageBtn) nextPageBtn.disabled = currentPage >= totalPages;
 }
 
-input.addEventListener('input', filtrarLivros);
+const debouncedSearch = debounce(() => {
+  currentPage = 1;
+  if (serverMode) fetchFiltered(1);
+  else filtrarLivros();
+}, 500);
+
+input.addEventListener('input', debouncedSearch);
+
+// Enter key triggers immediate search
+if (input) {
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      currentPage = 1;
+      if (serverMode) fetchFiltered(1);
+      else filtrarLivros();
+    }
+  });
+}
+
+// Search button triggers search
+if (searchBtn) {
+  searchBtn.addEventListener('click', () => {
+    currentPage = 1;
+    if (serverMode) fetchFiltered(1);
+    else filtrarLivros();
+  });
+}
+
+if (prevPageBtn) prevPageBtn.addEventListener('click', () => {
+  if (currentPage <= 1) return;
+  currentPage -= 1;
+  if (serverMode) fetchFiltered(currentPage);
+  else filtrarLivros();
+});
+
+if (nextPageBtn) nextPageBtn.addEventListener('click', () => {
+  // next page: if serverMode request next page; else advance local pages
+  currentPage += 1;
+  if (serverMode) fetchFiltered(currentPage);
+  else filtrarLivros();
+});
 
 botoes.forEach(botao => {
   botao.addEventListener('click', () => {
     botoes.forEach(item => item.classList.remove('ativo'));
     botao.classList.add('ativo');
     tipoSelecionado = botao.dataset.tipo;
-    filtrarLivros();
+    currentPage = 1;
+    if (serverMode) fetchFiltered(1);
+    else filtrarLivros();
   });
 });
 
@@ -384,7 +605,8 @@ function atualizarBotaoPerfil() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  buscarLivrosApi();
+  // Prefer server-side filtered fetch on load
+  fetchFiltered();
   atualizarBotaoPerfil();
 });
 </script>
