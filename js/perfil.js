@@ -316,4 +316,148 @@ if (logoutBtn) {
   });
 }
 
-window.addEventListener('DOMContentLoaded', carregarPerfil);
+/* ========== MODAL DE PESQUISA DE SATISFAÇÃO ========== */
+
+/**
+ * Sistema de Modal de Pesquisa de Satisfação
+ * 
+ * Este módulo gerencia um modal que:
+ * - Exibe automaticamente na página de perfil
+ * - Aparece apenas uma vez por sessão
+ * - Permite redirecionar para um formulário Google Forms
+ * - Pode ser fechado pelo usuário
+ */
+
+// URL do formulário Google Forms
+const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLScUF8LR5nHp3Qe4LqKhOcd8cpDpmMwAjUfk0YoXYuq4sX0ftw/viewform?usp=publish-editor';
+
+// Chave para controlar a exibição do modal na sessão
+const MODAL_SESSION_KEY = 'satisfacao_modal_shown';
+
+// Referências aos elementos do DOM
+const satisfacaoModal = document.getElementById('satisfacaoModal');
+const closeModalSatisfacaoBtn = document.getElementById('closeModalSatisfacao');
+const respondPesquisaBtn = document.getElementById('respondPesquisaBtn');
+const agoraNaoBtn = document.getElementById('agoraNaoBtn');
+
+/**
+ * Verifica se o modal já foi exibido nesta sessão
+ * @returns {boolean} true se já foi exibido, false caso contrário
+ */
+function jaMostrouModalNaSessao() {
+  return sessionStorage.getItem(MODAL_SESSION_KEY) === 'true';
+}
+
+/**
+ * Marca o modal como exibido na sessão
+ * Impede que ele apareça novamente durante a mesma sessão
+ */
+function marcarModalComoExibido() {
+  sessionStorage.setItem(MODAL_SESSION_KEY, 'true');
+}
+
+/**
+ * Abre/Exibe o modal de satisfação
+ * Remove a classe 'hidden' para torná-lo visível
+ */
+function abrirModalSatisfacao() {
+  if (satisfacaoModal) {
+    satisfacaoModal.classList.remove('hidden');
+    marcarModalComoExibido();
+  }
+}
+
+/**
+ * Fecha/Oculta o modal de satisfação
+ * Adiciona a classe 'hidden' para torná-lo invisível
+ */
+function fecharModalSatisfacao() {
+  if (satisfacaoModal) {
+    satisfacaoModal.classList.add('hidden');
+    marcarModalComoExibido();
+  }
+}
+
+/**
+ * Redireciona o usuário para o formulário Google Forms
+ * Abre em uma nova aba para não perder a navegação
+ */
+function abrirFormulario() {
+  marcarModalComoExibido();
+  // Abre o formulário em uma nova aba/janela
+  window.open(GOOGLE_FORM_URL, '_blank');
+  // Fecha o modal após um pequeno delay
+  setTimeout(() => {
+    fecharModalSatisfacao();
+  }, 300);
+}
+
+/**
+ * Event Listener: Clicar no overlay (fundo escurecido)
+ * Se clicar exatamente no overlay, fecha o modal
+ */
+if (satisfacaoModal) {
+  satisfacaoModal.addEventListener('click', (event) => {
+    // Se o clique for no overlay e não no conteúdo do modal
+    if (event.target === satisfacaoModal) {
+      fecharModalSatisfacao();
+    }
+  });
+}
+
+/**
+ * Event Listener: Botão de fechar (X)
+ * Localizado no canto superior direito do modal
+ */
+if (closeModalSatisfacaoBtn) {
+  closeModalSatisfacaoBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    fecharModalSatisfacao();
+  });
+}
+
+/**
+ * Event Listener: Botão "Responder Pesquisa"
+ * Redireciona para o formulário Google Forms em uma nova aba
+ */
+if (respondPesquisaBtn) {
+  respondPesquisaBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    abrirFormulario();
+  });
+}
+
+/**
+ * Event Listener: Botão "Agora Não"
+ * Fecha o modal sem redirecionar
+ * O modal não reaparece durante a mesma sessão
+ */
+if (agoraNaoBtn) {
+  agoraNaoBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    fecharModalSatisfacao();
+  });
+}
+
+/**
+ * Exibe o modal automaticamente na primeira vez
+ * Executado ao carregar a página de perfil
+ * 
+ * Lógica:
+ * 1. Aguarda o carregamento do perfil
+ * 2. Verifica se o modal já foi exibido nesta sessão
+ * 3. Se não, exibe o modal automaticamente
+ * 4. Marca como exibido para não aparecer novamente
+ */
+window.addEventListener('DOMContentLoaded', () => {
+  // Carrega o perfil do usuário (função original)
+  carregarPerfil();
+  
+  // Aguarda um pequeno tempo para garantir que o DOM está pronto
+  setTimeout(() => {
+    // Verifica se ainda não foi exibido nesta sessão
+    if (!jaMostrouModalNaSessao()) {
+      abrirModalSatisfacao();
+    }
+  }, 800);
+});

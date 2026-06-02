@@ -79,6 +79,43 @@
   </div>
 </div>
 
+<!-- Modal de Pesquisa de Satisfação -->
+<div id="satisfacaoModal" class="modal-overlay hidden">
+  <div class="modal-content modal-satisfacao">
+    <!-- Botão de Fechar (X) -->
+    <button id="closeModalSatisfacao" class="modal-close-btn" aria-label="Fechar modal">
+      &times;
+    </button>
+
+    <!-- Conteúdo do Modal -->
+    <div class="modal-satisfacao-body">
+      <!-- Título com emoji -->
+      <h2 class="modal-satisfacao-title">💙 Sua opinião ajuda a construir uma comunidade melhor</h2>
+
+      <!-- Mensagens -->
+      <div class="modal-satisfacao-messages">
+        <p>Estamos desenvolvendo esta plataforma para conectar leitores, incentivar a troca de livros e tornar a leitura cada vez mais acessível para todos.</p>
+
+        <p>Sua experiência é extremamente importante para nós. Cada resposta recebida nos ajuda a identificar melhorias, corrigir problemas e desenvolver novas funcionalidades que realmente façam diferença para nossa comunidade.</p>
+
+        <p>Responder nossa pesquisa leva apenas alguns minutos e contribui diretamente para a evolução do projeto.</p>
+
+        <p class="modal-satisfacao-gratitude">Agradecemos por fazer parte desta iniciativa e por nos ajudar a construir um espaço cada vez melhor para todos os apaixonados por livros 📚</p>
+      </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="modal-satisfacao-footer">
+      <button id="respondPesquisaBtn" class="modal-satisfacao-btn modal-satisfacao-btn-primary">
+        Responder Pesquisa
+      </button>
+      <button id="agoraNaoBtn" class="modal-satisfacao-btn modal-satisfacao-btn-secondary">
+        Agora Não
+      </button>
+    </div>
+  </div>
+</div>
+
 <script type="module" src="../js/perfil.js"></script>
 </body>
 </html>
