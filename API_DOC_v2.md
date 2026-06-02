@@ -182,6 +182,32 @@ Exemplos:
   - aceita `true` ou `false`
   - retorna livros de doação quando `true`
   - retorna livros de troca/venda quando `false`
+  
+### 3.11 Notificações
+
+#### Listar notificações do usuário
+
+- Método: `GET`
+- Endpoint: `{{baseUrl}}/api/notificacoes`
+- Cabeçalho: `Authorization: Bearer {{token}}`
+- Descrição: retorna as notificações associadas ao usuário autenticado.
+- Exemplo:
+  - `GET http://localhost:3000/api/notificacoes`
+- Resposta:
+  - `200 OK` com um array de notificações
+  - `401 Unauthorized` se o token estiver ausente ou inválido
+
+#### Marcar notificação como lida
+
+- Método: `PUT`
+- Endpoint: `{{baseUrl}}/api/notificacoes/:id/lida`
+- Cabeçalho: `Authorization: Bearer {{token}}`
+- Descrição: atualiza o status da notificação para lida.
+- Exemplo:
+  - `PUT http://localhost:3000/api/notificacoes/abc123/lida`
+- Resposta:
+  - `200 OK` com `{ mensagem: 'Notificação marcada como lida' }`
+  - `401 Unauthorized` se o token estiver ausente ou inválido
 
 ## 4. Erros comuns no Postman
 

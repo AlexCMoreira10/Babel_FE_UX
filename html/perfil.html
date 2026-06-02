@@ -55,10 +55,30 @@
           <p id="profileSectionMessage">A lista de livros publicados aparecerá aqui em breve.</p><br>
           <div id="profileAdsGrid" class="grid-livros"></div>
         </div>
+
+        <div class="profile-section">
+          <div class="profile-section-header">
+            <h2>Notificações</h2>
+          </div>
+          <p id="notificationsMessage">Carregando notificações...</p><br>
+          <div id="notificationsList" class="notifications-list"></div>
+        </div>
       </section>
     </main>
   </ion-content>
 </ion-app>
+
+<div id="deleteModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <h3>Confirmar remoção</h3>
+    <p id="deleteModalText">Deseja realmente remover este anúncio? Esta ação não pode ser desfeita.</p>
+    <div class="modal-actions">
+      <button type="button" id="confirmDeleteBtn" class="btn-danger">Sim, remover</button>
+      <button type="button" id="cancelDeleteBtn" class="btn-secondary">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <script type="module" src="../js/perfil.js"></script>
 </body>
 </html>

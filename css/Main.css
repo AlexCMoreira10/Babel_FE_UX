@@ -228,7 +228,8 @@ ion-content {
 
 .btn-add,
 .btn-login,
-.btn-secondary {
+.btn-secondary,
+.btn-danger {
   border-radius: 14px;
   display: inline-flex;
   align-items: center;
@@ -243,11 +244,56 @@ ion-content {
   padding: 12px 18px;
 }
 
+.btn-danger {
+  background: #d9534f;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background: #c9302c;
+}
+
 .btn-login,
 .btn-secondary {
   border: 1px solid rgba(32,49,61,0.1);
   color: var(--text);
   padding: 12px 18px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 99999;
+}
+
+.modal-content {
+  width: min(520px, 100%);
+  background: white;
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
+  text-align: center;
+}
+
+.modal-content h3 {
+  margin-bottom: 16px;
+  font-size: 1.4rem;
+}
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
 }
 
 .hero {
@@ -536,6 +582,56 @@ ion-content {
   color: var(--muted);
   font-size: 15px;
   line-height: 1.8;
+}
+
+.notifications-list {
+  display: grid;
+  gap: 16px;
+}
+
+.notification-card {
+  background: white;
+  border-radius: 22px;
+  border: 1px solid rgba(15,23,42,0.08);
+  box-shadow: 0 10px 24px rgba(15,23,42,0.05);
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.notification-card.notification-unread {
+  border-color: #d9534f;
+  background: #fff5f5;
+}
+
+.notification-card .notification-title {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.notification-card .notification-body {
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.notification-card .notification-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.notification-card .notification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.notification-card .btn-secondary,
+.notification-card .btn-danger {
+  padding: 10px 16px;
 }
 
 .btn-detalhes {

@@ -1,9 +1,7 @@
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
 
-let URL_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
-  ? URL_BASE_LOCAL
-  : URL_BASE_REMOTE;
+let URL_BASE = URL_BASE_LOCAL;
 
 async function fetchComFallback(url, options = {}) {
   try {
@@ -33,8 +31,18 @@ const erroDetalhes = document.getElementById('erroDetalhes');
 const carregandoRecomendacoes = document.getElementById('carregandoRecomendacoes');
 const gridRecomendacoes = document.getElementById('gridRecomendacoes');
 const semRecomendacoes = document.getElementById('semRecomendacoes');
+const contactButton = document.getElementById('contactButton');
+const contactModal = document.getElementById('contactModal');
+const contactModalTitle = document.getElementById('contactModalTitle');
+const contactTextarea = document.getElementById('contactMessage');
+const sendContactBtn = document.getElementById('sendContactBtn');
+const cancelContactBtn = document.getElementById('cancelContactBtn');
+const contactFeedback = document.getElementById('contactFeedback');
 let galeriaImagens = [];
 let galeriaIndex = 0;
+let contatoDestinatarioId = null;
+let contatoDestinatarioNome = null;
+let contatoLivroId = null;
 
 function extrairUrlImagem(valor) {
   if (!valor) return '';
@@ -69,7 +77,16 @@ function obterImagemLivro(livro) {
   return imagem || 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80';
 }
 
+function mostrarCarregando() {
+  carregandoDetalhes.style.display = 'block';
+  carregandoDetalhes.textContent = 'AGUARDE UM ESTANTE...';
+  conteudoDetalhes.style.display = 'none';
+  erroDetalhes.style.display = 'none';
+}
+
 async function carregarDetalhesLivro() {
+  mostrarCarregando();
+
   if (!livroId) {
     console.error('ID do livro não encontrado na URL');
     mostrarErro();
@@ -225,16 +242,24 @@ function renderizarDetalhes(livro) {
   
   if (livro.usuario) {
     if (typeof livro.usuario === 'object') {
-      nomeAnunciante.textContent = livro.usuario.displayName || livro.usuario.nome || 'Anunciante';
+      const nome = livro.usuario.displayName || livro.usuario.nome || 'Anunciante';
+      nomeAnunciante.textContent = nome;
       emailAnunciante.textContent = livro.usuario.email || 'email@example.com';
+      contatoDestinatarioNome = nome;
+      contatoDestinatarioId = livro.usuario._id || livro.usuario.uid || livro.usuario.id || livro.usuario.email || null;
     } else {
       nomeAnunciante.textContent = livro.usuario;
       emailAnunciante.textContent = 'Contatar via plataforma';
+      contatoDestinatarioNome = livro.usuario;
+      contatoDestinatarioId = livro.usuarioId || livro.usuario || null;
     }
   } else {
     nomeAnunciante.textContent = livro.usuarioId || 'Anunciante';
     emailAnunciante.textContent = 'Contatar via plataforma';
+    contatoDestinatarioNome = livro.usuarioId || 'Anunciante';
+    contatoDestinatarioId = livro.usuarioId || null;
   }
+  contatoLivroId = livro.id || livro._id || params.get('id');
 
   // Informações de troca
   if (livro.tipo === 'troca' && livro.trocas) {
@@ -321,6 +346,91 @@ function updateThumbnailSelection() {
   });
 }
 
+function abrirModalContato() {
+  if (contactModalTitle) {
+    contactModalTitle.textContent = `Enviar mensagem para ${contatoDestinatarioNome || 'anunciante'}`;
+  }
+
+  if (contactTextarea) {
+    contactTextarea.value = '';
+    contactTextarea.focus();
+  }
+
+  if (contactModal) {
+    contactModal.classList.remove('hidden');
+    contactModal.style.display = 'flex';
+  }
+
+  if (!contatoDestinatarioId && contactFeedback) {
+    contactFeedback.textContent = 'Destinatário não encontrado. A mensagem não poderá ser enviada.';
+  } else if (contactFeedback) {
+    contactFeedback.textContent = '';
+  }
+}
+
+function fecharModalContato() {
+  if (contactModal) {
+    contactModal.classList.add('hidden');
+    contactModal.style.display = 'none';
+  }
+}
+
+async function enviarMensagemContato() {
+  if (!contactTextarea) return;
+
+  const mensagem = contactTextarea.value.trim();
+  if (!mensagem) {
+    if (contactFeedback) {
+      contactFeedback.textContent = 'Por favor, escreva uma mensagem antes de enviar.';
+    }
+    return;
+  }
+
+  if (!contatoDestinatarioId) {
+    if (contactFeedback) {
+      contactFeedback.textContent = 'Não foi possível identificar o destinatário.';
+    }
+    return;
+  }
+
+  const token = localStorage.getItem('token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  try {
+    if (contactFeedback) {
+      contactFeedback.textContent = 'Enviando mensagem...';
+    }
+
+    const response = await fetchComFallback(`${URL_BASE}/mensagens`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        id_destinatario: contatoDestinatarioId,
+        conteudo: mensagem
+      })
+    });
+
+    if (!response.ok) {
+      const texto = await response.text();
+      throw new Error(`Status ${response.status}: ${texto}`);
+    }
+
+    if (contactFeedback) {
+      contactFeedback.textContent = 'Mensagem enviada com sucesso!';
+    }
+
+    setTimeout(() => {
+      fecharModalContato();
+    }, 800);
+  } catch (erro) {
+    console.error('Erro ao enviar mensagem de contato:', erro);
+    if (contactFeedback) {
+      contactFeedback.textContent = 'Não foi possível enviar a mensagem. Tente novamente mais tarde.';
+    }
+  }
+}
+
 async function carregarRecomendacoes(genero) {
   if (!genero) {
     semRecomendacoes.style.display = 'block';
@@ -405,6 +515,36 @@ function mostrarErro() {
 }
 
 // Carrega ao abrir a página
+function bindContactEvents() {
+  if (contactButton) {
+    contactButton.addEventListener('click', abrirModalContato);
+  }
+
+  document.body.addEventListener('click', event => {
+    const button = event.target.closest('#contactButton');
+    if (button) {
+      abrirModalContato();
+    }
+  });
+
+  if (sendContactBtn) {
+    sendContactBtn.addEventListener('click', enviarMensagemContato);
+  }
+
+  if (cancelContactBtn) {
+    cancelContactBtn.addEventListener('click', fecharModalContato);
+  }
+
+  if (contactModal) {
+    contactModal.addEventListener('click', event => {
+      if (event.target === contactModal) {
+        fecharModalContato();
+      }
+    });
+  }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   carregarDetalhesLivro();
+  bindContactEvents();
 });

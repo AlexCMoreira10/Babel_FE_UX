@@ -31,7 +31,7 @@
           </div>
 
           <div class="detalhes-info">
-            <div id="carregandoDetalhes" class="carregando">Carregando detalhes...</div>
+            <div id="carregandoDetalhes" class="carregando">AGUARDE UM ESTANTE...</div>
             
             <div id="conteudoDetalhes" style="display: none;">
               <h1 id="titulo"></h1>
@@ -100,7 +100,7 @@
                 </div>
               </div>
 
-              <button class="btn-primary">Entrar em Contato</button>
+              <button id="contactButton" type="button" class="btn-primary">Entrar em Contato</button>
             </div>
 
             <div id="erroDetalhes" style="display: none;" class="erro-mensagem">
@@ -148,6 +148,19 @@
     <button id="galleryPrev" class="btn-secondary">◀</button>
     <img id="galleryImage" src="" alt="Imagem do livro">
     <button id="galleryNext" class="btn-secondary">▶</button>
+  </div>
+</div>
+
+<div id="contactModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <h3 id="contactModalTitle">Enviar mensagem</h3>
+    <p class="modal-text">Escreva sua mensagem para o anunciante.</p>
+    <textarea id="contactMessage" rows="6" placeholder="Escreva aqui sua mensagem..." style="width:100%; border:1px solid rgba(32,49,61,0.12); border-radius:16px; padding:14px; font-size:15px; resize:vertical;"></textarea>
+    <p id="contactFeedback" style="margin-top:12px; color:var(--muted); font-size:14px;"></p>
+    <div class="modal-actions" style="justify-content:center; margin-top:24px;">
+      <button id="sendContactBtn" type="button" class="btn-primary">Enviar mensagem</button>
+      <button id="cancelContactBtn" type="button" class="btn-secondary">Cancelar</button>
+    </div>
   </div>
 </div>
 

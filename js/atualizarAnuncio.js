@@ -1,9 +1,7 @@
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
 
-let URL_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
-  ? URL_BASE_LOCAL
-  : URL_BASE_REMOTE;
+let URL_BASE = URL_BASE_LOCAL;
 
 async function fetchComFallback(url, options = {}) {
   try {
