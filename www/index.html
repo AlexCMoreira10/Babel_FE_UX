@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estante | Troca de livros</title>
+
+  <link rel="stylesheet" href="./css/Main.css">
+  <script type="module" src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.esm.js"></script>
+  <script nomodule src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@ionic/core@latest/css/ionic.bundle.css">
+</head>
+
+<body>
+<ion-app>
+  <ion-content fullscreen>
+    <header class="navbar">
+      <div class="logo">
+        <ion-icon name="book-outline"></ion-icon>
+        <span>Estante</span>
+      </div>
+
+      <nav class="links">
+        <a href="#explorar">Explorar</a>
+        <a href="#sobre">Sobre</a>
+        <a href="#livros">Livros</a>
+      </nav>
+
+      <div class="acoes">
+        <a id="msgLink" href="./html/mensagens.html" class="btn-msg hidden">
+          <ion-icon name="mail-outline"></ion-icon>
+          Msg
+        </a>
+        <a href="./html/publicar.html" class="btn-add">
+          <ion-icon name="add-circle-outline"></ion-icon>
+          Publicar
+        </a>
+        <a id="profileLink" href="./html/login.html" class="btn-login">
+          <ion-icon name="person-outline"></ion-icon>
+          Entrar
+        </a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" id="explorar">
+        <div class="hero-content">
+          <span class="badge">Livro, troca, doação e venda</span>
+          <h1>Deixe seus livros viajarem para novas estantes.</h1>
+          <p>
+            Conecte leitores, encontre títulos especiais e transforme o jeito de compartilhar
+            livros usados com confiança e estilo.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#livros" class="btn-hero">Ver livros</a>
+            <a href="./html/publicar.html" class="btn-secondary">Publicar livro</a>
+          </div>
+        </div>
+
+        <div class="hero-cards">
+          <article class="hero-card">
+            <h3>Trocas rápidas</h3>
+            <p>Encontre parceiros com interesses parecidos e negocie direto pela plataforma.</p>
+          </article>
+          <article class="hero-card">
+            <h3>Venda com segurança</h3>
+            <p>Mostre seu livro com fotos, descrição e preço transparente para compradores.</p>
+          </article>
+          <article class="hero-card">
+            <h3>Doe com carinho</h3>
+            <p>Garanta que suas histórias cheguem a novos leitores e ajude a espalhar conhecimento.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="sobre-nos" id="sobre">
+        <div class="sobre-textos">
+          <span>Bem-vindo à Estante</span>
+          <h2>Uma comunidade para quem ama livros e acredita em histórias compartilhadas.</h2>
+          <p>
+            Aqui você encontra um ambiente acolhedor para trocar, vender ou doar livros com facilidade.
+            A plataforma foi pensada para conectar leitores de todo o Brasil em uma experiência leve
+            e moderna.
+          </p>
+        </div>
+
+        <div class="sobre-cards">
+          <div class="sobre-card">
+            <ion-icon name="swap-horizontal-outline"></ion-icon>
+            <h3>Trocas inteligentes</h3>
+            <p>Filtre por gênero, localização e condição do livro antes de combinar uma troca.</p>
+          </div>
+          <div class="sobre-card">
+            <ion-icon name="heart-outline"></ion-icon>
+            <h3>Doações que fazem sentido</h3>
+            <p>Permita que seus livros encontrem novos leitores sem custo para quem recebe.</p>
+          </div>
+          <div class="sobre-card">
+            <ion-icon name="shield-checkmark-outline"></ion-icon>
+            <h3>Confiança e transparência</h3>
+            <p>Perfil de usuário, descrição completa e regras claras para cada anúncio.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="area-livros" id="livros">
+        <div class="filtro-box">
+          <div class="campo-busca">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="text" id="pesquisa" placeholder="Buscar por título ou autor...">
+            <button id="searchBtn" class="btn-add">Pesquisar</button>
+          </div>
+
+          <div class="filtros">
+            <button class="ativo" data-tipo="todos">Todos</button>
+            <button data-tipo="troca">Troca</button>
+            <button data-tipo="venda">Venda</button>
+            <button data-tipo="doacao">Doação</button>
+          </div>
+        </div>
+
+        <div class="resultado-head">
+          <div>
+            <span class="section-label">Catálogo</span>
+            <h2>Livros disponíveis</h2>
+          </div>
+          <span id="contador-livros">0 itens encontrados</span>
+        </div>
+
+        <div id="carregandoEstante" class="carregando" style="display:none;">Aguarde enquanto carregamos a sua estante...</div>
+          <div id="authBanner" style="display:none; margin:16px 0;" class="erro-mensagem">
+            <p>Sua sessão expirou ou você não está autenticado. <a href="./html/login.html" style="font-weight:700; color:inherit; text-decoration:underline;">Entrar com Google</a></p>
+          </div>
+
+        <section id="gridLivros" class="grid-livros"></section>
+
+        <div class="paginacao" id="paginacao">
+          <button id="prevPage" class="btn-secondary">Anterior</button>
+          <span id="pageIndicator">Página 1</span>
+          <button id="nextPage" class="btn-add">Próxima</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-brand">
+        <h2><ion-icon name="book-outline"></ion-icon> Estante</h2>
+        <p>Troque histórias, compartilhe mundos. Uma plataforma para conectar leitores e valorizar livros usados.</p>
+      </div>
+      <div class="footer-links">
+        <h3>Links</h3>
+        <a href="#sobre">Sobre</a>
+        <a href="#explorar">Explorar</a>
+        <a href="#livros">Livros</a>
+      </div>
+      <div class="footer-contact">
+        <h3>Contato</h3>
+        <p>✉ contato@estante.com</p>
+        <p>📍 Online</p>
+      </div>
+    </footer>
+  </ion-content>
+</ion-app>
+
+<script>
+const URL_BASE_LOCAL = 'http://localhost:3000/api';
+const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
+
+// Determina qual URL usar: localhost se estiver rodando localmente, caso contrário remoto
+let URL_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
+  ? URL_BASE_LOCAL
+  : URL_BASE_REMOTE;
+
+// Função helper para fazer fetch com fallback automático
+async function fetchComFallback(url, options = {}) {
+  try {
+    const response = await fetch(url, options);
+    return response;
+  } catch (erro) {
+    // Se URL usada foi a local e falhou, tenta remota
+    if (URL_BASE === URL_BASE_LOCAL && url.includes(URL_BASE_LOCAL)) {
+      console.warn(`Falha ao conectar em ${URL_BASE_LOCAL}, tentando ${URL_BASE_REMOTE}...`);
+      URL_BASE = URL_BASE_REMOTE;
+      const urlRemota = url.replace(URL_BASE_LOCAL, URL_BASE_REMOTE);
+      return fetch(urlRemota, options);
+    }
+    throw erro;
+  }
+}
+
+let livros = [
+  {
+    id: '1',
+    titulo: '1984',
+    autor: 'George Orwell',
+    condicao: 'Muito Bom',
+    tipo: 'troca',
+    localizacao: 'São Paulo, SP',
+    usuario: 'Maria Silva',
+    preco: null,
+    imagem: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    id: '2',
+    titulo: 'O Senhor dos Anéis',
+    autor: 'J.R.R. Tolkien',
+    condicao: 'Novo',
+    tipo: 'venda',
+    localizacao: 'Rio de Janeiro, RJ',
+    usuario: 'João Santos',
+    preco: 45.00,
+    imagem: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    id: '3',
+    titulo: 'Dom Casmurro',
+    autor: 'Machado de Assis',
+    condicao: 'Bom',
+    tipo: 'doacao',
+    localizacao: 'Belo Horizonte, MG',
+    usuario: 'Ana Costa',
+    preco: null,
+    imagem: 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    id: '4',
+    titulo: 'Harry Potter e a Pedra Filosofal',
+    autor: 'J.K. Rowling',
+    condicao: 'Muito Bom',
+    tipo: 'troca',
+    localizacao: 'Curitiba, PR',
+    usuario: 'Pedro Oliveira',
+    preco: null,
+    imagem: 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    id: '5',
+    titulo: 'A Culpa é das Estrelas',
+    autor: 'John Green',
+    condicao: 'Bom',
+    tipo: 'venda',
+    localizacao: 'Porto Alegre, RS',
+    usuario: 'Carla Mendes',
+    preco: 25.00,
+    imagem: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    id: '6',
+    titulo: 'O Pequeno Príncipe',
+    autor: 'Antoine de Saint-Exupéry',
+    condicao: 'Muito Bom',
+    tipo: 'doacao',
+    localizacao: 'Salvador, BA',
+    usuario: 'Lucas Ferreira',
+    preco: null,
+    imagem: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    id: '7',
+    titulo: 'Orgulho e Preconceito',
+    autor: 'Jane Austen',
+    condicao: 'Novo',
+    tipo: 'venda',
+    localizacao: 'Brasília, DF',
+    usuario: 'Beatriz Lima',
+    preco: 35.00,
+    imagem: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    id: '8',
+    titulo: 'A Metamorfose',
+    autor: 'Franz Kafka',
+    condicao: 'Bom',
+    tipo: 'troca',
+    localizacao: 'Recife, PE',
+    usuario: 'Rafael Souza',
+    preco: null,
+    imagem: 'https://images.unsplash.com/photo-1526243741027-444d633d7365?auto=format&fit=crop&w=800&q=80'
+  }
+];
+
+const grid = document.getElementById('gridLivros') || document.querySelector('.grid-livros');
+const input = document.getElementById('pesquisa');
+const searchBtn = document.getElementById('searchBtn');
+const botoes = document.querySelectorAll('.filtros button');
+const contador = document.getElementById('contador-livros');
+let tipoSelecionado = 'todos';
+// paginação
+let currentPage = 1;
+const pageSize = 16;
+let serverMode = true; // se true, buscamos páginas do backend
+let lastFetchedCount = 0;
+const carregandoEstante = document.getElementById('carregandoEstante');
+const prevPageBtn = document.getElementById('prevPage');
+const nextPageBtn = document.getElementById('nextPage');
+const pageIndicator = document.getElementById('pageIndicator');
+
+async function buscarLivrosApi(page = 1) {
+  try {
+    const token = localStorage.getItem('token');
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    // mostra mensagem de carregamento se demorar
+    let showTimer = setTimeout(() => {
+      if (carregandoEstante) carregandoEstante.style.display = 'flex';
+    }, 700);
+
+    const resposta = await fetchComFallback(`${URL_BASE}/livros?page=${page}&limit=${pageSize}`, {
+      headers: headers
+    });
+    clearTimeout(showTimer);
+    if (carregandoEstante) carregandoEstante.style.display = 'none';
+    
+      // tratar auth errors explicitamente
+      if (resposta.status === 401 || resposta.status === 403) {
+        console.warn('Requisição não autorizada (401/403).');
+        const authBanner = document.getElementById('authBanner');
+        if (authBanner) authBanner.style.display = 'block';
+        if (page === 1) {
+          serverMode = false;
+          currentPage = 1;
+          filtrarLivros();
+          return;
+        }
+        throw new Error(`Status ${resposta.status}`);
+      }
+
+    if (!resposta.ok) {
+      throw new Error(`Status ${resposta.status}`);
+    }
+
+    const dados = await resposta.json();
+    console.log('Resposta da API:', dados);
+
+    // Aceita varios formatos de resposta
+    let lista = [];
+    if (Array.isArray(dados)) lista = dados;
+    else if (Array.isArray(dados.livros)) lista = dados.livros;
+    else if (Array.isArray(dados.dados)) lista = dados.dados;
+    else if (Array.isArray(dados.data)) lista = dados.data;
+    else lista = [];
+
+    // se nada encontrado na primeira página, usa fallback local
+    if (page === 1 && lista.length === 0) {
+      console.warn('API retornou vazio; usando dados locais de fallback');
+      serverMode = false;
+      currentPage = 1;
+      filtrarLivros();
+      return;
+    }
+
+    // servidor retornou resultados (página)
+    serverMode = true;
+    lastFetchedCount = lista.length;
+    renderServerBooks(lista);
+    updatePaginationButtons();
+    console.log(`Carregados ${lista.length} livros (página ${page})`);
+  } catch (erro) {
+    console.warn('Não foi possível carregar livros da API:', erro);
+    // fallback para local se página 1
+    if (page === 1) {
+      serverMode = false;
+      currentPage = 1;
+      filtrarLivros();
+      return;
+    }
+  } finally {
+    console.log('Busca concluída');
+  }
+}
+
+// Busca aplicada ao backend com filtros e termo de pesquisa
+async function fetchFiltered(page = 1) {
+  try {
+    const token = localStorage.getItem('token');
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const termo = (input.value || '').trim();
+    const params = new URLSearchParams();
+    params.set('page', page);
+    params.set('limit', pageSize);
+    if (tipoSelecionado && tipoSelecionado !== 'todos') params.set('tipo', tipoSelecionado);
+    if (termo) {
+      // envia termo tanto em titulo quanto em autor para aumentar chance de match
+      params.set('titulo', termo);
+      params.set('autor', termo);
+    }
+
+    let showTimer = setTimeout(() => {
+      if (carregandoEstante) carregandoEstante.style.display = 'flex';
+    }, 700);
+
+    const url = `${URL_BASE}/livros?${params.toString()}`;
+    console.log('Fetch filtered URL:', url);
+
+    const resposta = await fetchComFallback(url, { headers });
+    clearTimeout(showTimer);
+    if (carregandoEstante) carregandoEstante.style.display = 'none';
+
+    if (resposta.status === 401 || resposta.status === 403) {
+      const authBanner = document.getElementById('authBanner');
+      if (authBanner) authBanner.style.display = 'block';
+      serverMode = false;
+      currentPage = 1;
+      filtrarLivros();
+      return;
+    }
+
+    if (!resposta.ok) throw new Error(`Status ${resposta.status}`);
+
+    const dados = await resposta.json();
+    console.log('Resposta da API (filtrada):', dados);
+
+    let lista = [];
+    if (Array.isArray(dados)) lista = dados;
+    else if (Array.isArray(dados.livros)) lista = dados.livros;
+    else if (Array.isArray(dados.dados)) lista = dados.dados;
+    else if (Array.isArray(dados.data)) lista = dados.data;
+
+    if (page === 1 && lista.length === 0) {
+      console.warn('API filtrada retornou vazio; usando fallback local');
+      serverMode = false;
+      currentPage = 1;
+      filtrarLivros();
+      return;
+    }
+
+    serverMode = true;
+    lastFetchedCount = lista.length;
+    renderServerBooks(lista);
+    updatePaginationButtons();
+  } catch (erro) {
+    console.warn('Erro ao buscar filtrado no backend:', erro);
+    if (page === 1) {
+      serverMode = false;
+      currentPage = 1;
+      filtrarLivros();
+    }
+  }
+}
+
+// debounce helper
+function debounce(fn, wait) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), wait);
+  };
+}
+
+function renderServerBooks(arr) {
+  grid.innerHTML = arr.map(criarCard).join('');
+  atualizarContador(arr.length);
+  pageIndicator.textContent = `Página ${currentPage}`;
+}
+
+function updatePaginationButtons() {
+  if (prevPageBtn) prevPageBtn.disabled = currentPage <= 1;
+  if (nextPageBtn) nextPageBtn.disabled = lastFetchedCount < pageSize;
+  if (pageIndicator) pageIndicator.textContent = `Página ${currentPage}`;
+}
+
+function formatarPreco(valor) {
+  return valor === null ? '' : `R$ ${valor.toFixed(2).replace('.', ',')}`;
+}
+
+function extrairUrlImagem(valor) {
+  if (!valor) return '';
+  if (typeof valor === 'string') return valor;
+  if (Array.isArray(valor)) return valor.length ? extrairUrlImagem(valor[0]) : '';
+  if (typeof valor === 'object') {
+    return valor.url || valor.secure_url || valor.src || valor.path || valor.location || valor.filename || '';
+  }
+  return '';
+}
+
+function obterImagemLivro(livro) {
+  const imagem = extrairUrlImagem(livro.fotos ?? livro.imagem ?? livro.foto ?? null);
+  return imagem || 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80';
+}
+
+window.salvarLivroSelecionado = function(id) {
+  const livro = livros.find(l => (l._id || l.id) === id);
+  if (livro) {
+    sessionStorage.setItem('livroSelecionado', JSON.stringify(livro));
+    console.log('Livro selecionado salvo para detalhes:', livro);
+  }
+};
+
+function criarCard(livro) {
+  const tipo = livro.tipo || 'troca';
+  const imagem = obterImagemLivro(livro);
+  const usuarioNome = livro.usuario?.displayName || livro.usuario?.nome || livro.usuario || livro.usuarioId || 'Anunciante';
+  const livroId = livro._id || livro.id || '';
+  const detalhesHref = livroId ? `./html/detalhes.html?id=${livroId}` : '#';
+  const detalhesOnclick = livroId ? `onclick="window.salvarLivroSelecionado('${livroId}')"` : '';
+  const detalhesLabel = livroId ? 'Detalhes' : 'Sem detalhes';
+  console.log('Gerando link de detalhes:', { titulo: livro.titulo, livroId });
+
+  return `
+    <article class="book-card" data-tipo="${tipo}">
+      <div class="imagem" style="background-image:url('${imagem}')">
+        <span class="tag ${tipo}">${tipo === 'doacao' ? 'Doação' : tipo === 'venda' ? 'Venda' : 'Troca'}</span>
+      </div>
+      <div class="book-info">
+        <h3>${livro.titulo}</h3>
+        <p class="autor">${livro.autor}</p>
+        <p class="condicao">Estado: ${livro.condicao || 'Bom'}${livro.preco ? ` • ${formatarPreco(livro.preco)}` : ''}</p>
+        <p class="localizacao">📍 ${livro.localizacao || 'Local não informado'}</p>
+        <p class="usuario">👤 ${usuarioNome}</p>
+        <a href="${detalhesHref}" class="btn-detalhes" ${detalhesOnclick}>${detalhesLabel}</a>
+      </div>
+    </article>
+  `;
+}
+
+function atualizarContador(total) {
+  contador.textContent = `${total} item${total === 1 ? '' : 's'} encontrado${total === 1 ? '' : 's'}`;
+}
+
+function filtrarLivros() {
+  // aplica filtros sobre os dados locais (fallback)
+  const termo = input.value.trim().toLowerCase();
+  const filtrados = livros.filter(livro => {
+    const matchTipo = tipoSelecionado === 'todos' || livro.tipo === tipoSelecionado;
+    const texto = `${livro.titulo} ${livro.autor}`.toLowerCase();
+    const matchTexto = texto.includes(termo);
+    return matchTipo && matchTexto;
+  });
+
+  // paginação local
+  const total = filtrados.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (currentPage > totalPages) currentPage = totalPages;
+
+  const start = (currentPage - 1) * pageSize;
+  const pageItems = filtrados.slice(start, start + pageSize);
+
+  grid.innerHTML = pageItems.map(criarCard).join('');
+  atualizarContador(total);
+
+  // atualizar controles
+  if (pageIndicator) pageIndicator.textContent = `Página ${currentPage} / ${totalPages}`;
+  if (prevPageBtn) prevPageBtn.disabled = currentPage <= 1;
+  if (nextPageBtn) nextPageBtn.disabled = currentPage >= totalPages;
+}
+
+const debouncedSearch = debounce(() => {
+  currentPage = 1;
+  if (serverMode) fetchFiltered(1);
+  else filtrarLivros();
+}, 500);
+
+input.addEventListener('input', debouncedSearch);
+
+// Enter key triggers immediate search
+if (input) {
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      currentPage = 1;
+      if (serverMode) fetchFiltered(1);
+      else filtrarLivros();
+    }
+  });
+}
+
+// Search button triggers search
+if (searchBtn) {
+  searchBtn.addEventListener('click', () => {
+    currentPage = 1;
+    if (serverMode) fetchFiltered(1);
+    else filtrarLivros();
+  });
+}
+
+if (prevPageBtn) prevPageBtn.addEventListener('click', () => {
+  if (currentPage <= 1) return;
+  currentPage -= 1;
+  if (serverMode) fetchFiltered(currentPage);
+  else filtrarLivros();
+});
+
+if (nextPageBtn) nextPageBtn.addEventListener('click', () => {
+  // next page: if serverMode request next page; else advance local pages
+  currentPage += 1;
+  if (serverMode) fetchFiltered(currentPage);
+  else filtrarLivros();
+});
+
+botoes.forEach(botao => {
+  botao.addEventListener('click', () => {
+    botoes.forEach(item => item.classList.remove('ativo'));
+    botao.classList.add('ativo');
+    tipoSelecionado = botao.dataset.tipo;
+    currentPage = 1;
+    if (serverMode) fetchFiltered(1);
+    else filtrarLivros();
+  });
+});
+
+function atualizarBotaoPerfil() {
+  const profileLink = document.getElementById('profileLink');
+  const usuarioStr = localStorage.getItem('usuario');
+
+  const explorarSection = document.getElementById('explorar');
+  const sobreSection = document.getElementById('sobre');
+  const navLinks = document.querySelector('.links');
+
+  if (!profileLink) return;
+
+  if (usuarioStr) {
+    try {
+      const usuario = JSON.parse(usuarioStr);
+      const nome = usuario.displayName?.split(' ')[0] || usuario.displayName || 'Perfil';
+      profileLink.innerHTML = `<ion-icon name="person-outline"></ion-icon> Olá, ${nome}`;
+      profileLink.href = './html/perfil.html';
+      profileLink.classList.remove('btn-login');
+      profileLink.classList.add('perfil-link');
+      if (explorarSection) explorarSection.classList.add('hidden');
+      if (sobreSection) sobreSection.classList.add('hidden');
+      if (navLinks) navLinks.classList.add('hidden');
+    } catch (error) {
+      console.error('Erro ao ler usuário do localStorage:', error);
+    }
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  // Prefer server-side filtered fetch on load
+  fetchFiltered();
+  atualizarBotaoPerfil();
+});
+</script>
+
+<!-- Script Global da Plataforma -->
+<script src="./js/global.js"></script>
+</body>
+</html>

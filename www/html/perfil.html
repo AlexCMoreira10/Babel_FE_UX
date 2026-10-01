@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perfil | Estante</title>
+  <link rel="stylesheet" href="../css/Main.css">
+  <script type="module" src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.esm.js"></script>
+  <script nomodule src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@ionic/core@latest/css/ionic.bundle.css">
+</head>
+<body>
+<ion-app>
+  <ion-content fullscreen>
+    <header class="navbar">
+      <div class="logo">
+        <ion-icon name="book-outline"></ion-icon>
+        <span>Estante</span>
+      </div>
+      <a href="../index.html" class="btn-secondary">Voltar</a>
+    </header>
+
+    <main class="form-page">
+      <section class="form-card profile-card">
+        <div>
+          <span>Meu Perfil</span>
+          <h1>Bem-vindo à sua estante</h1>
+          <p>Aqui você vê suas informações e pode gerir seus anúncios.</p>
+        </div>
+
+        <div class="profile-info">
+          <div class="profile-item">
+            <strong>Nome</strong>
+            <p id="perfilNome">Carregando...</p>
+          </div>
+          <div class="profile-item">
+            <strong>E-mail</strong>
+            <p id="perfilEmail">Carregando...</p>
+          </div>
+          <div class="profile-item">
+            <strong>ID</strong>
+            <p id="perfilUid">Carregando...</p>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button id="logoutBtn" type="button">Sair</button>
+          <a href="publicar.html" class="btn-secondary">Publicar novo livro</a>
+        </div>
+
+        <div class="profile-section">
+          <div class="profile-section-header">
+            <h2>Seus anúncios</h2>
+          </div>
+          <p id="profileSectionMessage">A lista de livros publicados aparecerá aqui em breve.</p><br>
+          <div id="profileAdsGrid" class="grid-livros"></div>
+        </div>
+
+        <div class="profile-section">
+          <div class="profile-section-header">
+            <h2>Notificações</h2>
+          </div>
+          <p id="notificationsMessage">Carregando notificações...</p><br>
+          <div id="notificationsList" class="notifications-list"></div>
+        </div>
+      </section>
+    </main>
+  </ion-content>
+</ion-app>
+
+<div id="deleteModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <h3>Confirmar remoção</h3>
+    <p id="deleteModalText">Deseja realmente remover este anúncio? Esta ação não pode ser desfeita.</p>
+    <div class="modal-actions">
+      <button type="button" id="confirmDeleteBtn" class="btn-danger">Sim, remover</button>
+      <button type="button" id="cancelDeleteBtn" class="btn-secondary">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Pesquisa de Satisfação -->
+<div id="satisfacaoModal" class="modal-overlay hidden">
+  <div class="modal-content modal-satisfacao">
+    <!-- Botão de Fechar (X) -->
+    <button id="closeModalSatisfacao" class="modal-close-btn" aria-label="Fechar modal">
+      &times;
+    </button>
+
+    <!-- Conteúdo do Modal -->
+    <div class="modal-satisfacao-body">
+      <!-- Título com emoji -->
+      <h2 class="modal-satisfacao-title">💙 Sua opinião ajuda a construir uma comunidade melhor</h2>
+
+      <!-- Mensagens -->
+      <div class="modal-satisfacao-messages">
+        <p>Estamos desenvolvendo esta plataforma para conectar leitores, incentivar a troca de livros e tornar a leitura cada vez mais acessível para todos.</p>
+
+        <p>Sua experiência é extremamente importante para nós. Cada resposta recebida nos ajuda a identificar melhorias, corrigir problemas e desenvolver novas funcionalidades que realmente façam diferença para nossa comunidade.</p>
+
+        <p>Responder nossa pesquisa leva apenas alguns minutos e contribui diretamente para a evolução do projeto.</p>
+
+        <p class="modal-satisfacao-gratitude">Agradecemos por fazer parte desta iniciativa e por nos ajudar a construir um espaço cada vez melhor para todos os apaixonados por livros 📚</p>
+      </div>
+    </div>
+
+    <!-- Botões -->
+    <div class="modal-satisfacao-footer">
+      <button id="respondPesquisaBtn" class="modal-satisfacao-btn modal-satisfacao-btn-primary">
+        Responder Pesquisa
+      </button>
+      <button id="agoraNaoBtn" class="modal-satisfacao-btn modal-satisfacao-btn-secondary">
+        Agora Não
+      </button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="../js/perfil.js"></script>
+</body>
+</html>

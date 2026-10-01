@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mensagens | Estante</title>
+  <link rel="stylesheet" href="../css/Main.css">
+  <script type="module" src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.esm.js"></script>
+  <script nomodule src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@ionic/core@latest/css/ionic.bundle.css">
+</head>
+<body>
+<ion-app>
+  <ion-content fullscreen>
+    <!-- Header -->
+    <header class="navbar">
+      <div class="logo">
+        <ion-icon name="book-outline"></ion-icon>
+        <span>Estante</span>
+      </div>
+      <a href="../index.html" class="btn-secondary">Voltar</a>
+    </header>
+
+    <!-- Container Principal -->
+    <div class="mensagens-container">
+      <!-- Painel de Conversas -->
+      <aside class="conversas-panel">
+        <div class="conversas-header">
+          <h2>Mensagens</h2>
+          <div class="conversas-filtro">
+            <input 
+              type="text" 
+              id="filtroConversa" 
+              placeholder="Buscar conversa..."
+              class="campo-filtro"
+            >
+          </div>
+        </div>
+
+        <!-- Lista de Conversas -->
+        <div class="conversas-list" id="conversasList">
+          <div class="conversa-item-carregando">
+            <p>Carregando mensagens...</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Painel de Chat -->
+      <main class="chat-panel">
+        <!-- Area sem conversa selecionada -->
+        <div id="chatVazio" class="chat-vazio">
+          <ion-icon name="mail-outline"></ion-icon>
+          <h3>Selecione uma conversa</h3>
+          <p>Escolha uma conversa da lista para visualizar as mensagens</p>
+        </div>
+
+        <!-- Area com conversa -->
+        <div id="chatAtivo" class="chat-ativo hidden">
+          <!-- Header do Chat -->
+          <div class="chat-header">
+            <div class="chat-info">
+              <h3 id="chatNome">Nome do Usuário</h3>
+              <p id="chatStatus" class="chat-status">Online</p>
+            </div>
+            <button id="btnFecharChat" class="btn-fechar-chat" aria-label="Fechar chat">
+              <ion-icon name="close-outline"></ion-icon>
+            </button>
+          </div>
+
+          <!-- Mensagens -->
+          <div class="mensagens-area" id="mensagensArea">
+            <div class="mensagem-carregando">
+              <p>Carregando mensagens...</p>
+            </div>
+          </div>
+
+          <!-- Input de Nova Mensagem -->
+          <div class="chat-input-area">
+            <form id="formEnviarMensagem" class="form-enviar-msg">
+              <input 
+                type="text" 
+                id="inputMensagem" 
+                placeholder="Digite sua mensagem..."
+                class="input-mensagem"
+                required
+              >
+              <button type="submit" class="btn-enviar-msg" aria-label="Enviar mensagem">
+                <ion-icon name="send-outline"></ion-icon>
+              </button>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+  </ion-content>
+</ion-app>
+
+<script type="module" src="../js/mensagens.js"></script>
+</body>
+</html>

@@ -1,5 +1,12 @@
 # API de Livros - Uso no Postman
 
+npm init -y
+npm install @capacitor/core @capacitor/cli
+
+npx cap init "babel" "com.alexcmoreira.babel" --web-dir='www'
+npm install @capacitor/android
+
+
 ## 1. Visão geral
 
 - Base URL: `http://localhost:3000/api`
