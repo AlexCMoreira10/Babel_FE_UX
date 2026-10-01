@@ -1,11 +1,16 @@
-# API de Livros - Uso no Postman
-
+# Build para celular
+bash 
 npm init -y
 npm install @capacitor/core @capacitor/cli
-
-npx cap init "babel" "com.alexcmoreira.babel" --web-dir='www'
 npm install @capacitor/android
 
+npx cap init "babel" "com.alexcmoreira.babel" --web-dir='www'
+npx cap add android
+npx cap copy
+npx cap sync 
+npx cap open android
+
+# API de Livros - Uso no Postman
 
 ## 1. Visão geral
 
@@ -13,7 +18,7 @@ npm install @capacitor/android
 - Base URL: `https://babel-be-lovat.vercel.app/`
 - Essa API é o backend do aplicativo de troca/venda/doação de livros.
 
-### 🔐 Autenticação
+### Autenticação
 
 - Todas as rotas (exceto futuras rotas públicas) exigem autenticação via Firebase.
 - Cabeçalho obrigatório em todas as requisições protegidas:

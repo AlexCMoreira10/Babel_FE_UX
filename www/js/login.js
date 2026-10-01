@@ -2,8 +2,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import {
   getAuth,
   signInWithPopup,
+  signInWithCredential,
   GoogleAuthProvider
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { Capacitor } from "@capacitor/core";
 
 /* CONFIG FIREBASE */
 const firebaseConfig = {
@@ -30,14 +32,31 @@ let token = null;
 /* BOTÃO */
 const loginBtn = document.getElementById("loginBtn");
 
+async function entrarComGoogleAndroid() {
+  const { FirebaseAuthentication } = await import(
+    "https://unpkg.com/@capacitor-firebase/authentication@8.5.2/dist/esm/index.js"
+  );
+  const resultadoNativo = await FirebaseAuthentication.signInWithGoogle();
+  const idTokenGoogle = resultadoNativo.credential?.idToken;
+
+  if (!idTokenGoogle) {
+    throw new Error("O Google não retornou um ID token para autenticação.");
+  }
+
+  const credencialFirebase = GoogleAuthProvider.credential(idTokenGoogle);
+  const resultadoFirebase = await signInWithCredential(auth, credencialFirebase);
+  return resultadoFirebase.user;
+}
+
 if (loginBtn) {
   loginBtn.onclick = async () => {
     try {
-      loginBtn.innerText = "Entrando...";
+      loginBtn.innerText = "Aguarde...";
       loginBtn.disabled = true;
 
-      const result = await signInWithPopup(auth, provider);
-      const usuario = result.user;
+      const usuario = Capacitor.getPlatform() === "android"
+        ? await entrarComGoogleAndroid()
+        : (await signInWithPopup(auth, provider)).user;
       token = await usuario.getIdToken();
       console.log("Token do usuário:", token);
 
@@ -50,16 +69,12 @@ if (loginBtn) {
           uid: usuario.uid
         }));
 
-        alert("Login bem-sucedido! 💛");
-        window.location.href = "../index.html";
-      } else {
-        alert("Falha no login. Tente novamente.");
-        loginBtn.innerText = "Entrar com Google";
-        loginBtn.disabled = false;
+        window.location.replace("../index.html");
       }
     } catch (erro) {
       console.error("Erro no login:", erro);
-      alert("Erro ao fazer login 😢\nVeja o console (F12)");
+      alert(`Não foi possível entrar com o Google.\n${erro.message || "Tente novamente."}`);
+    } finally {
       loginBtn.innerText = "Entrar com Google";
       loginBtn.disabled = false;
     }

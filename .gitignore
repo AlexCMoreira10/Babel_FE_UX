@@ -1,3 +1,6 @@
 DIAGNOSTICO_VERCEL.md
 android/
+!android/
+android/*
+!android/variables.gradle
 node_modules/

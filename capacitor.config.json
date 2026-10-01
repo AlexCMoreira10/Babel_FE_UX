@@ -1,5 +1,10 @@
 {
   "appId": "com.estante.babel",
   "appName": "Babel",
-  "webDir": "www"
+  "webDir": "www",
+  "plugins": {
+    "FirebaseAuthentication": {
+      "providers": ["google.com"]
+    }
+  }
 }

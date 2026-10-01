@@ -174,8 +174,19 @@ let URL_BASE = window.location.hostname.includes('localhost') || window.location
 
 // Função helper para fazer fetch com fallback automático
 async function fetchComFallback(url, options = {}) {
+  const fetchComTimeout = async (urlRequisicao) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+
+    try {
+      return await fetch(urlRequisicao, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
   try {
-    const response = await fetch(url, options);
+    const response = await fetchComTimeout(url);
     return response;
   } catch (erro) {
     // Se URL usada foi a local e falhou, tenta remota
@@ -183,7 +194,7 @@ async function fetchComFallback(url, options = {}) {
       console.warn(`Falha ao conectar em ${URL_BASE_LOCAL}, tentando ${URL_BASE_REMOTE}...`);
       URL_BASE = URL_BASE_REMOTE;
       const urlRemota = url.replace(URL_BASE_LOCAL, URL_BASE_REMOTE);
-      return fetch(urlRemota, options);
+      return fetchComTimeout(urlRemota);
     }
     throw erro;
   }
@@ -297,13 +308,15 @@ const nextPageBtn = document.getElementById('nextPage');
 const pageIndicator = document.getElementById('pageIndicator');
 
 async function buscarLivrosApi(page = 1) {
+  let showTimer;
+
   try {
     const token = localStorage.getItem('token');
     const headers = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     // mostra mensagem de carregamento se demorar
-    let showTimer = setTimeout(() => {
+    showTimer = setTimeout(() => {
       if (carregandoEstante) carregandoEstante.style.display = 'flex';
     }, 700);
 
@@ -367,12 +380,16 @@ async function buscarLivrosApi(page = 1) {
       return;
     }
   } finally {
+    clearTimeout(showTimer);
+    if (carregandoEstante) carregandoEstante.style.display = 'none';
     console.log('Busca concluída');
   }
 }
 
 // Busca aplicada ao backend com filtros e termo de pesquisa
 async function fetchFiltered(page = 1) {
+  let showTimer;
+
   try {
     const token = localStorage.getItem('token');
     const headers = {};
@@ -389,7 +406,7 @@ async function fetchFiltered(page = 1) {
       params.set('autor', termo);
     }
 
-    let showTimer = setTimeout(() => {
+    showTimer = setTimeout(() => {
       if (carregandoEstante) carregandoEstante.style.display = 'flex';
     }, 700);
 
@@ -439,6 +456,9 @@ async function fetchFiltered(page = 1) {
       currentPage = 1;
       filtrarLivros();
     }
+  } finally {
+    clearTimeout(showTimer);
+    if (carregandoEstante) carregandoEstante.style.display = 'none';
   }
 }
 
