@@ -31,14 +31,29 @@
       <section class="login-card">
         <div class="login-head">
           <span>Entrar</span>
-          <h1>Faça login com Google para acessar sua estante.</h1>
-          <p>Use sua conta Google para ver seus livros, publicar anúncios e gerenciar trocas.</p>
+          <h1>Acesse sua estante.</h1>
+          <p>Entre com seu e-mail e senha ou continue com sua conta Google.</p>
         </div>
 
-        <button id="loginBtn" class="btn-add">
+        <form id="emailLoginForm" class="auth-form">
+          <div class="form-group">
+            <label for="loginEmail">E-mail</label>
+            <input id="loginEmail" name="email" type="email" autocomplete="email" required>
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Senha</label>
+            <input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+          </div>
+          <p id="loginFeedback" class="auth-feedback" role="status" aria-live="polite"></p>
+          <button id="emailLoginBtn" class="btn-add auth-submit" type="submit">Entrar com e-mail</button>
+        </form>
+
+        <div class="auth-divider"><span>ou</span></div>
+        <button id="loginBtn" class="btn-secondary auth-google" type="button">
           <ion-icon name="logo-google"></ion-icon>
           Entrar com Google
         </button>
+        <p class="auth-switch">Ainda não tem conta? <a href="./cadastro.html">Cadastre-se</a></p>
       </section>
     </main>
   </ion-content>

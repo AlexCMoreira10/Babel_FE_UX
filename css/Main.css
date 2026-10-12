@@ -59,6 +59,249 @@ ion-content {
   gap: 28px;
 }
 
+.auth-form {
+  display: grid;
+  gap: 18px;
+}
+
+.auth-submit {
+  width: 100%;
+  justify-content: center;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.auth-submit:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.auth-google {
+  width: 100%;
+  justify-content: center;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--border);
+}
+
+.auth-feedback {
+  min-height: 20px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.auth-feedback.erro {
+  color: #b42318;
+}
+
+.auth-feedback.sucesso {
+  color: var(--primary-strong);
+}
+
+.auth-switch {
+  color: var(--muted);
+  text-align: center;
+  font-size: 14px;
+}
+
+.auth-switch a {
+  color: var(--primary-strong);
+  font-weight: 700;
+}
+
+.cadastro-page {
+  display: flex;
+  justify-content: center;
+  padding: 48px 6%;
+}
+
+.cadastro-card {
+  width: min(860px, 100%);
+  padding: 40px;
+  border-radius: 28px;
+  background: white;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 28px;
+}
+
+.cadastro-card form {
+  display: grid;
+  gap: 24px;
+}
+
+.cadastro-card .form-grid {
+  gap: 18px;
+}
+
+.form-span-2 {
+  grid-column: 1 / -1;
+}
+
+.cadastro-fieldset,
+.cadastro-telefones {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px;
+}
+
+.cadastro-fieldset {
+  display: grid;
+  gap: 18px;
+}
+
+.cadastro-fieldset legend,
+.cadastro-telefones legend {
+  padding: 0 8px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.cadastro-fieldset legend span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.cadastro-fieldset > .small-text {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.cep-busca {
+  display: flex;
+  gap: 10px;
+}
+
+.cep-busca input {
+  flex: 1;
+  min-width: 0;
+}
+
+.cep-busca button {
+  flex-shrink: 0;
+  justify-content: center;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.cep-busca button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.cadastro-fieldset .small-text.erro {
+  color: #b42318;
+}
+
+.cadastro-fieldset .small-text.sucesso {
+  color: var(--primary-strong);
+}
+
+.cadastro-telefones {
+  display: grid;
+  gap: 12px;
+}
+
+.telefone-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.telefone-item input {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #f8fbfb;
+  color: var(--text);
+  font: inherit;
+}
+
+.btn-text,
+.btn-remover-telefone {
+  width: fit-content;
+  border: 0;
+  background: transparent;
+  color: var(--primary-strong);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-remover-telefone {
+  color: #b42318;
+  font-size: 13px;
+}
+
+.cadastro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.cadastro-actions .auth-submit {
+  width: auto;
+}
+
+@media (max-width: 520px) {
+  .cadastro-page {
+    padding: 24px 4%;
+  }
+
+  .cadastro-card {
+    padding: 24px 18px;
+    border-radius: 22px;
+  }
+
+  .cadastro-fieldset,
+  .cadastro-telefones {
+    padding: 16px 12px;
+  }
+
+  .telefone-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .telefone-item input,
+  .cadastro-actions .auth-submit,
+  .cadastro-actions .btn-secondary {
+    width: 100%;
+  }
+
+  .cep-busca {
+    flex-direction: column;
+  }
+
+  .cep-busca button {
+    min-height: 44px;
+  }
+}
+
 .login-head span {
   display: inline-block;
   font-weight: 700;
@@ -1297,10 +1540,17 @@ ion-content {
 .conversa-item {
   display: flex;
   align-items: center;
+  width: 100%;
   padding: 12px 16px;
   border-bottom: 1px solid rgba(32, 49, 61, 0.05);
   cursor: pointer;
   transition: background-color 0.2s ease;
+  background: white;
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  text-align: left;
+  font: inherit;
 }
 
 .conversa-item:hover {
@@ -1315,6 +1565,31 @@ ion-content {
 .conversa-info {
   flex: 1;
   min-width: 0;
+}
+
+.conversa-avatar {
+  width: 42px;
+  height: 42px;
+  margin-right: 12px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #e8f5f5;
+  color: var(--primary-strong);
+  font-weight: 700;
+}
+
+.conversa-avatar-imagem {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.conversa-avatar-inicial {
+  font-size: 16px;
 }
 
 .conversa-nome {
@@ -1342,8 +1617,30 @@ ion-content {
 .conversa-hora {
   font-size: 12px;
   color: var(--muted);
+  flex-shrink: 0;
+}
+
+.conversa-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
   margin-left: 8px;
   flex-shrink: 0;
+}
+
+.conversa-nao-lidas {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .conversa-item-carregando {
@@ -1434,6 +1731,22 @@ ion-content {
   justify-content: center;
   height: 100%;
   color: var(--muted);
+}
+
+.btn-mensagens-anteriores {
+  align-self: center;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: white;
+  color: var(--primary-strong);
+  cursor: pointer;
+  font: inherit;
+}
+
+.btn-mensagens-anteriores:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 
 .mensagem {
