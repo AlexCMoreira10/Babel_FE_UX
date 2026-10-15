@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Histórico do Livro | Estante</title>
+  <link rel="stylesheet" href="../css/Main.css">
+  <script type="module" src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.esm.js"></script>
+  <script nomodule src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@ionic/core@latest/css/ionic.bundle.css">
+</head>
+<body>
+<ion-app>
+  <ion-content fullscreen>
+    <header class="navbar">
+      <div class="logo">
+        <ion-icon name="book-outline"></ion-icon>
+        <span>Estante</span>
+      </div>
+      <a href="../index.html" class="btn-secondary">Voltar</a>
+    </header>
+
+    <main class="rastreio-page">
+      <section class="rastreio-card">
+        <div>
+          <span>Passaporte do livro</span>
+          <h1 id="rastreioTitulo">Histórico do livro</h1>
+          <p id="rastreioStatus" role="status" aria-live="polite">Carregando o histórico...</p>
+        </div>
+        <div id="rastreioLivro" class="rastreio-livro"></div>
+        <div class="rastreio-actions">
+          <button id="adquirirLivroBtn" type="button" class="btn-add hidden">Adquiri este livro</button>
+          <p id="aquisicaoFeedback" role="status" aria-live="polite"></p>
+        </div>
+        <section class="rastreio-section">
+          <h2>Histórico de posse</h2>
+          <div id="historicoPosse" class="rastreio-list"></div>
+        </section>
+        <section class="rastreio-section">
+          <h2>Negociações concluídas</h2>
+          <div id="historicoNegociacoes" class="rastreio-list"></div>
+        </section>
+        <section class="rastreio-section">
+          <h2>Avaliações</h2>
+          <div id="avaliacoes" class="rastreio-list"></div>
+          <form id="formAvaliacao" class="rastreio-form hidden">
+            <label for="comentarioAvaliacao">Conte como foi sua experiência com este exemplar</label>
+            <textarea id="comentarioAvaliacao" maxlength="2000" required></textarea>
+            <button type="submit" class="btn-add">Publicar avaliação</button>
+            <p id="avaliacaoFeedback" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+      </section>
+    </main>
+  </ion-content>
+</ion-app>
+
+<div id="aquisicaoModal" class="modal-overlay hidden">
+  <form id="formAquisicao" class="modal-content">
+    <h3>Como você adquiriu este livro?</h3>
+    <p class="modal-text">O pedido ficará pendente até a confirmação do proprietário atual.</p>
+    <label for="tipoNegociacao">Tipo de negociação</label>
+    <select id="tipoNegociacao" required>
+      <option value="doacao">Doação</option>
+      <option value="troca">Troca</option>
+      <option value="venda">Compra</option>
+    </select>
+    <p id="aquisicaoModalFeedback" role="status" aria-live="polite"></p>
+    <div class="modal-actions">
+      <button id="confirmarAquisicaoBtn" type="submit" class="btn-add">Enviar pedido</button>
+      <button id="cancelarAquisicaoBtn" type="button" class="btn-secondary">Cancelar</button>
+    </div>
+  </form>
+</div>
+
+<script type="module" src="../js/rastreio.js"></script>
+</body>
+</html>

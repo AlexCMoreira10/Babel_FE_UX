@@ -73,7 +73,20 @@ async function salvarSessao(usuario) {
 
   localStorage.setItem("token", token);
   localStorage.setItem("usuario", JSON.stringify(dadosUsuario));
-  window.location.replace("../index.html");
+  const returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
+  let destino = "../index.html";
+  if (returnUrl) {
+    try {
+      const urlRetorno = new URL(returnUrl, window.location.href);
+      if (urlRetorno.origin === window.location.origin
+        && ["http:", "https:", "file:"].includes(urlRetorno.protocol)) {
+        destino = urlRetorno.href;
+      }
+    } catch (erro) {
+      console.warn("URL de retorno do login inválida.", erro);
+    }
+  }
+  window.location.replace(destino);
 }
 
 async function entrarComGoogleAndroid() {

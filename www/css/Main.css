@@ -930,6 +930,150 @@ ion-content {
   padding: 10px 16px;
 }
 
+.rastreio-page {
+  width: min(980px, 92%);
+  margin: 48px auto;
+}
+
+.rastreio-card {
+  display: grid;
+  gap: 28px;
+  padding: 36px;
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.06);
+}
+
+.rastreio-card h1 {
+  margin: 8px 0;
+  font-size: 2rem;
+}
+
+.rastreio-card > div:first-child > span {
+  color: var(--primary-strong);
+  font-weight: 700;
+}
+
+.rastreio-livro {
+  display: grid;
+  grid-template-columns: minmax(120px, 200px) 1fr;
+  align-items: start;
+  gap: 24px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--bg);
+}
+
+.rastreio-livro img {
+  width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  border-radius: 14px;
+}
+
+.rastreio-livro p {
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+.rastreio-actions,
+.rastreio-form,
+.acervo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.rastreio-section {
+  display: grid;
+  gap: 14px;
+}
+
+.rastreio-list {
+  display: grid;
+  gap: 12px;
+}
+
+.rastreio-item,
+.rastreio-vazio,
+.transferencia-pendente {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.rastreio-item span,
+.rastreio-vazio {
+  color: var(--muted);
+}
+
+.rastreio-form {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.rastreio-form textarea,
+#formAquisicao select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  font: inherit;
+}
+
+.transferencia-pendente {
+  margin-top: 16px;
+  background: #f4f8fb;
+}
+
+.book-qr {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: white;
+}
+
+.book-qr img {
+  width: min(220px, 100%);
+  image-rendering: pixelated;
+}
+
+.book-qr a {
+  color: var(--primary-strong);
+  overflow-wrap: anywhere;
+}
+
+.owned-book-cover {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 20px 20px 0 0;
+}
+
+.acervo-status {
+  margin: 8px 0;
+  color: var(--muted);
+  text-transform: capitalize;
+}
+
+.acervo-actions button {
+  flex: 1 1 145px;
+}
+
+#scanFeedback,
+#aquisicaoFeedback,
+#avaliacaoFeedback,
+#aquisicaoModalFeedback {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .btn-detalhes {
   display: inline-flex;
   align-items: center;
@@ -953,6 +1097,20 @@ ion-content {
   border-radius: 28px;
   padding: 48px 48px 40px;
   box-shadow: 0 24px 70px rgba(15,23,42,0.06);
+}
+
+@media (max-width: 640px) {
+  .rastreio-card {
+    padding: 22px;
+  }
+
+  .rastreio-livro {
+    grid-template-columns: 1fr;
+  }
+
+  .rastreio-livro img {
+    max-width: 220px;
+  }
 }
 
 /* ========== PÁGINA DE DETALHES ========== */

@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Perfil | Estante</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "@capacitor/core": "https://esm.sh/@capacitor/core@8.5.2",
+        "@capacitor-mlkit/barcode-scanning": "https://esm.sh/@capacitor-mlkit/barcode-scanning@8.2.1?external=@capacitor/core"
+      }
+    }
+  </script>
   <link rel="stylesheet" href="../css/Main.css">
   <script type="module" src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.esm.js"></script>
   <script nomodule src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.js"></script>
@@ -46,14 +54,29 @@
         <div class="form-actions">
           <button id="logoutBtn" type="button">Sair</button>
           <a href="publicar.html" class="btn-secondary">Publicar novo livro</a>
+          <button id="scanQrBtn" type="button" class="btn-secondary">Ler QR Code de um livro</button>
         </div>
+        <p id="scanFeedback" role="status" aria-live="polite"></p>
+
+        <section id="recentBookQr" class="profile-section hidden">
+          <div class="profile-section-header"><h2>QR Code do livro publicado</h2></div>
+          <div id="recentBookQrContent" class="book-qr"></div>
+        </section>
 
         <div class="profile-section">
           <div class="profile-section-header">
             <h2>Seus anúncios</h2>
           </div>
-          <p id="profileSectionMessage">A lista de livros publicados aparecerá aqui em breve.</p><br>
+          <p id="profileSectionMessage">Carregando seus anúncios...</p><br>
           <div id="profileAdsGrid" class="grid-livros"></div>
+        </div>
+
+        <div class="profile-section">
+          <div class="profile-section-header">
+            <h2>Sua estante</h2>
+          </div>
+          <p id="shelfMessage">Carregando os livros que você possui...</p><br>
+          <div id="ownedBooksGrid" class="grid-livros"></div>
         </div>
 
         <div class="profile-section">
@@ -67,17 +90,6 @@
     </main>
   </ion-content>
 </ion-app>
-
-<div id="deleteModal" class="modal-overlay hidden">
-  <div class="modal-content">
-    <h3>Confirmar remoção</h3>
-    <p id="deleteModalText">Deseja realmente remover este anúncio? Esta ação não pode ser desfeita.</p>
-    <div class="modal-actions">
-      <button type="button" id="confirmDeleteBtn" class="btn-danger">Sim, remover</button>
-      <button type="button" id="cancelDeleteBtn" class="btn-secondary">Cancelar</button>
-    </div>
-  </div>
-</div>
 
 <!-- Modal de Pesquisa de Satisfação -->
 <div id="satisfacaoModal" class="modal-overlay hidden">

@@ -1,3 +1,5 @@
+import { salvarQrLivro } from './books-api.js';
+
 const form = document.getElementById('formPublicar');
 const tipoSelect = document.getElementById('tipo');
 const precoGroup = document.getElementById('precoGroup');
@@ -55,15 +57,6 @@ if (form) {
       return;
     }
 
-    // build payload
-    const usuarioStr = localStorage.getItem('usuario');
-    let usuarioObj = null;
-    try {
-      usuarioObj = usuarioStr ? JSON.parse(usuarioStr) : null;
-    } catch (err) {
-      console.warn('usuario no localStorage corrompido', err);
-    }
-
     const data = {
       titulo: form.titulo.value.trim(),
       autor: form.autor.value.trim(),
@@ -84,11 +77,6 @@ if (form) {
 
     if (form.tipo.value === 'venda') {
       data.preco = Number(form.preco.value);
-    }
-
-    // attach usuarioId if available
-    if (usuarioObj && usuarioObj.uid) {
-      data.usuarioId = usuarioObj.uid;
     }
 
     // disable submit
@@ -114,8 +102,20 @@ if (form) {
         throw new Error(msg);
       }
 
-      alert('Livro publicado com sucesso!');
-      // on success, redirect to perfil to show user's books
+      const livroCriado = body?.livro || body?.data?.livro || body?.data || body;
+      const dadosQr = {
+        ...livroCriado,
+        titulo: livroCriado?.titulo || data.titulo,
+        qrCode: livroCriado?.qrCode || livroCriado?.qr?.qrCode || '',
+        qrUrl: livroCriado?.qrUrl || livroCriado?.qr?.qrUrl || ''
+      };
+      sessionStorage.setItem('livroPublicadoQr', JSON.stringify(dadosQr));
+      try {
+        salvarQrLivro(dadosQr);
+      } catch (erroArmazenamento) {
+        console.error('Não foi possível salvar o QR Code para as próximas visitas:', erroArmazenamento);
+      }
+      alert('Livro publicado com sucesso! O QR Code ficará disponível no seu perfil.');
       window.location.href = './perfil.html';
     } catch (error) {
       console.error('Erro ao publicar:', error);

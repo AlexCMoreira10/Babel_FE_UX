@@ -1,3 +1,9 @@
+import {
+  obterQrLivro,
+  obterQrLivroPublicadoRecentemente,
+  requisitarApiLivros
+} from './books-api.js';
+
 const perfilNome = document.getElementById('perfilNome');
 const perfilEmail = document.getElementById('perfilEmail');
 const perfilUid = document.getElementById('perfilUid');
@@ -5,6 +11,10 @@ const logoutBtn = document.getElementById('logoutBtn');
 const refreshAdsBtn = document.getElementById('refreshAdsBtn');
 const profileAdsGrid = document.getElementById('profileAdsGrid');
 const profileSectionMessage = document.getElementById('profileSectionMessage');
+const ownedBooksGrid = document.getElementById('ownedBooksGrid');
+const shelfMessage = document.getElementById('shelfMessage');
+const scanQrBtn = document.getElementById('scanQrBtn');
+const scanFeedback = document.getElementById('scanFeedback');
 const notificationsList = document.getElementById('notificationsList');
 const notificationsMessage = document.getElementById('notificationsMessage');
 
@@ -31,7 +41,7 @@ async function fetchComFallback(url, options = {}) {
 function carregarPerfil() {
   const usuarioStr = localStorage.getItem('usuario');
 
-  if (!usuarioStr) {
+  if (!usuarioStr || !localStorage.getItem('token')) {
     window.location.href = 'login.html';
     return;
   }
@@ -41,7 +51,9 @@ function carregarPerfil() {
     perfilNome.textContent = usuario.displayName || 'Usuário';
     perfilEmail.textContent = usuario.email || 'Não informado';
     perfilUid.textContent = usuario.uid || 'Não disponível';
-    carregarAnuncios(usuario);
+    mostrarQrPublicadoRecentemente();
+    carregarMeusAnuncios();
+    carregarEstante();
     carregarNotificacoes();
   } catch (erro) {
     console.error('Erro ao carregar perfil:', erro);
@@ -390,6 +402,267 @@ function abrirFormulario() {
   setTimeout(() => {
     fecharModalSatisfacao();
   }, 300);
+}
+
+function escaparHtml(valor) {
+  const elemento = document.createElement('span');
+  elemento.textContent = String(valor ?? '');
+  return elemento.innerHTML;
+}
+
+function mostrarQrPublicadoRecentemente() {
+  const secao = document.getElementById('recentBookQr');
+  const conteudo = document.getElementById('recentBookQrContent');
+  if (!secao || !conteudo) return;
+
+  try {
+    const livro = obterQrLivroPublicadoRecentemente();
+    if (!livro) return;
+    if (livro.qrCode) {
+      const token = livro.qrUrl ? extrairTokenRastreio(livro.qrUrl) : '';
+      conteudo.innerHTML = `<p>${escaparHtml(livro.titulo || 'Livro publicado')}</p><img src="${escaparHtml(livro.qrCode)}" alt="QR Code para rastrear o livro">${token ? `<a href="./rastreio.html?token=${encodeURIComponent(token)}">Abrir histórico no app</a>` : ''}`;
+      secao.classList.remove('hidden');
+    }
+  } catch (erro) {
+    console.error('Não foi possível exibir o QR Code retornado pela publicação:', erro);
+  }
+}
+
+function obterListaApi(dados) {
+  if (Array.isArray(dados)) return dados;
+  for (const chave of ['livros', 'dados', 'data', 'estante']) {
+    if (Array.isArray(dados?.[chave])) return dados[chave];
+  }
+  return [];
+}
+
+async function carregarMeusAnuncios() {
+  profileSectionMessage.textContent = 'Carregando seus anúncios...';
+  profileAdsGrid.innerHTML = '';
+  try {
+    const resposta = await requisitarApiLivros('/me/livros?page=1&limit=100');
+    const anuncios = obterListaApi(resposta);
+    profileSectionMessage.textContent = anuncios.length
+      ? `Você tem ${anuncios.length} anúncio${anuncios.length === 1 ? '' : 's'} publicado${anuncios.length === 1 ? '' : 's'}.`
+      : 'Nenhum anúncio encontrado. Publique seu primeiro livro!';
+    profileAdsGrid.innerHTML = anuncios.map(criarNovoCardAnuncio).join('');
+  } catch (erro) {
+    console.error('Erro ao carregar anúncios do usuário:', erro);
+    profileSectionMessage.textContent = `Não foi possível carregar seus anúncios: ${erro.message}`;
+  }
+}
+
+function criarNovoCardAnuncio(livro) {
+  const id = String(livro.id || livro._id || '');
+  const tipo = livro.tipo || 'troca';
+  const qrSalvo = obterQrLivro(id);
+  const qrCode = livro.qrCode || livro.qr?.qrCode || livro.data?.qrCode || qrSalvo?.qrCode || '';
+  const qrUrl = livro.qrUrl || livro.qr?.qrUrl || livro.data?.qrUrl || qrSalvo?.qrUrl || '';
+  const nomePedido = livro.transferenciaPendente?.solicitante?.nome
+    || livro.transferenciaPendente?.usuario?.nome
+    || livro.transferenciaPendente?.nome
+    || 'Pessoa interessada';
+  const pedido = livro.transferenciaPendente
+    ? `<div class="transferencia-pendente">
+        <strong>Pedido de aquisição pendente</strong>
+        <p>${escaparHtml(nomePedido)}${livro.transferenciaPendente.tipoNegociacao ? ` · ${escaparHtml(livro.transferenciaPendente.tipoNegociacao)}` : ''}</p>
+        <div class="acervo-actions">
+          <button type="button" class="btn-add" data-action="transfer" data-choice="confirmar" data-id="${escaparHtml(id)}">Confirmar transferência</button>
+          <button type="button" class="btn-secondary" data-action="transfer" data-choice="recusar" data-id="${escaparHtml(id)}">Recusar pedido</button>
+        </div>
+      </div>`
+    : '';
+
+  return `
+    <article class="book-card" data-tipo="${escaparHtml(tipo)}">
+      <div class="imagem" style="background-image:url('${escaparHtml(livro.imagem || livro.fotos?.[0] || '')}')">
+        <span class="tag ${escaparHtml(tipo)}">${tipo === 'doacao' ? 'Doação' : tipo === 'venda' ? 'Venda' : 'Troca'}</span>
+      </div>
+      <div class="book-info">
+        <h3>${escaparHtml(livro.titulo || 'Sem título')}</h3>
+        <p class="autor">${escaparHtml(livro.autor || 'Autor desconhecido')}</p>
+        <p class="condicao">Estado: ${escaparHtml(livro.condicao || 'Bom')}</p>
+        <a href="./detalhes.html?id=${encodeURIComponent(id)}" class="btn-detalhes">Ver anúncio</a>
+        <a href="./atualizarAnuncio.html?id=${encodeURIComponent(id)}" class="btn-add">Atualizar anúncio</a>
+        <button type="button" class="btn-secondary" data-action="show-qr" data-id="${escaparHtml(id)}" data-qr-code="${encodeURIComponent(qrCode)}" data-qr-url="${encodeURIComponent(qrUrl)}">Mostrar QR Code</button>
+        <div class="book-qr hidden" data-qr-result="${escaparHtml(id)}"></div>
+        ${pedido}
+      </div>
+    </article>`;
+}
+
+async function carregarEstante() {
+  shelfMessage.textContent = 'Carregando os livros que você possui...';
+  ownedBooksGrid.innerHTML = '';
+  try {
+    const resposta = await requisitarApiLivros('/me/estante?page=1&limit=100');
+    const livros = obterListaApi(resposta);
+    shelfMessage.textContent = livros.length
+      ? `Você possui ${livros.length} livro${livros.length === 1 ? '' : 's'}.`
+      : 'Sua estante ainda está vazia. Livros adquiridos aparecem aqui após a confirmação do proprietário.';
+    ownedBooksGrid.innerHTML = livros.map(criarCardLivroAcervo).join('');
+  } catch (erro) {
+    console.error('Erro ao carregar a estante:', erro);
+    shelfMessage.textContent = `Não foi possível carregar sua estante: ${erro.message}`;
+  }
+}
+
+function criarCardLivroAcervo(livro) {
+  const id = String(livro.id || livro._id || '');
+  const titulo = escaparHtml(livro.titulo || 'Livro sem título');
+  const estado = livro.estadoAcervo || 'normal';
+  const estadoBloqueado = ['roubado', 'danificado'].includes(estado);
+  const tokenRastreio = livro.tokenRastreio || livro.token || '';
+  const qrSalvo = obterQrLivro(id);
+  const qrCode = livro.qrCode || livro.qr?.qrCode || livro.data?.qrCode || qrSalvo?.qrCode || '';
+  const qrUrl = livro.qrUrl || livro.qr?.qrUrl || livro.data?.qrUrl || qrSalvo?.qrUrl || '';
+  const imagem = Array.isArray(livro.fotos) ? livro.fotos[0] : livro.imagem || livro.foto;
+
+  return `
+    <article class="book-card owned-book-card">
+      ${imagem ? `<img class="owned-book-cover" src="${escaparHtml(imagem)}" alt="Capa de ${titulo}">` : ''}
+      <div class="book-info">
+        <h3>${titulo}</h3>
+        <p class="autor">${escaparHtml(livro.autor || 'Autor desconhecido')}</p>
+        <p class="acervo-status">Estado do exemplar: ${escaparHtml(estado)}</p>
+        ${tokenRastreio ? `<a class="btn-detalhes" href="./rastreio.html?token=${encodeURIComponent(tokenRastreio)}">Ver histórico</a>` : ''}
+        <button type="button" class="btn-secondary" data-action="show-qr" data-id="${escaparHtml(id)}" data-qr-code="${encodeURIComponent(qrCode)}" data-qr-url="${encodeURIComponent(qrUrl)}">Mostrar QR Code</button>
+        <div class="book-qr hidden" data-qr-result="${escaparHtml(id)}"></div>
+        <div class="acervo-actions">
+          <button type="button" class="btn-secondary" data-action="mark-state" data-id="${escaparHtml(id)}" data-state="danificado" ${estadoBloqueado ? 'disabled' : ''}>Marcar danificado</button>
+          <button type="button" class="btn-danger" data-action="mark-state" data-id="${escaparHtml(id)}" data-state="roubado" ${estadoBloqueado ? 'disabled' : ''}>Marcar roubado</button>
+        </div>
+      </div>
+    </article>`;
+}
+
+function mostrarQrDoAnuncio(qrCodeCodificado, qrUrlCodificada, container) {
+  container.classList.remove('hidden');
+  const qrCode = decodeURIComponent(qrCodeCodificado || '');
+  const qrUrl = decodeURIComponent(qrUrlCodificada || '');
+  const token = qrUrl ? extrairTokenRastreio(qrUrl) : '';
+  container.innerHTML = qrCode
+    ? `<img src="${escaparHtml(qrCode)}" alt="QR Code para rastrear o livro">${token ? `<a href="./rastreio.html?token=${encodeURIComponent(token)}">Abrir histórico no app</a>` : ''}`
+    : `O QR Code não foi retornado pela API para este livro.${token ? ` <a href="./rastreio.html?token=${encodeURIComponent(token)}">Abrir histórico no app</a>` : ''}`;
+}
+
+if (profileAdsGrid) {
+  profileAdsGrid.addEventListener('click', async evento => {
+    const botao = evento.target.closest('[data-action]');
+    if (!botao) return;
+
+    const livroId = botao.dataset.id;
+    if (botao.dataset.action === 'show-qr') {
+      const output = profileAdsGrid.querySelector(`[data-qr-result="${CSS.escape(livroId)}"]`);
+      if (output) mostrarQrDoAnuncio(botao.dataset.qrCode, botao.dataset.qrUrl, output);
+      return;
+    }
+
+    if (botao.dataset.action !== 'transfer') return;
+    const escolha = botao.dataset.choice;
+    botao.disabled = true;
+    const textoOriginal = botao.textContent;
+    botao.textContent = 'Processando...';
+    try {
+      await requisitarApiLivros(`/livros/${encodeURIComponent(livroId)}/aquisicoes/${escolha}`, {
+        method: 'POST'
+      });
+      profileSectionMessage.textContent = escolha === 'confirmar'
+        ? 'Aquisição confirmada. A estante do novo proprietário será atualizada.'
+        : 'Pedido de aquisição recusado.';
+      await Promise.all([carregarMeusAnuncios(), carregarEstante()]);
+    } catch (erro) {
+      console.error(`Erro ao ${escolha} aquisição:`, erro);
+      profileSectionMessage.textContent = `Não foi possível processar o pedido: ${erro.message}`;
+      botao.disabled = false;
+      botao.textContent = textoOriginal;
+    }
+  });
+}
+
+if (ownedBooksGrid) {
+  ownedBooksGrid.addEventListener('click', async evento => {
+    const qrButton = evento.target.closest('[data-action="show-qr"]');
+    if (qrButton) {
+      const output = ownedBooksGrid.querySelector(`[data-qr-result="${CSS.escape(qrButton.dataset.id)}"]`);
+      if (output) mostrarQrDoAnuncio(qrButton.dataset.qrCode, qrButton.dataset.qrUrl, output);
+      return;
+    }
+
+    const botao = evento.target.closest('[data-action="mark-state"]');
+    if (!botao) return;
+    botao.disabled = true;
+    shelfMessage.textContent = 'Atualizando o estado do exemplar...';
+    try {
+      await requisitarApiLivros(`/me/estante/${encodeURIComponent(botao.dataset.id)}/estado`, {
+        method: 'PUT',
+        body: { estadoAcervo: botao.dataset.state }
+      });
+      await carregarEstante();
+    } catch (erro) {
+      console.error('Erro ao atualizar o estado do livro:', erro);
+      shelfMessage.textContent = `Não foi possível atualizar o exemplar: ${erro.message}`;
+      botao.disabled = false;
+    }
+  });
+}
+
+function extrairTokenRastreio(valor) {
+  try {
+    const url = new URL(valor);
+    const correspondencia = url.pathname.match(/\/livros\/rastreio\/([^/]+)\/?$/);
+    return correspondencia ? decodeURIComponent(correspondencia[1]) : url.searchParams.get('token');
+  } catch {
+    return valor.trim();
+  }
+}
+
+if (scanQrBtn) {
+  scanQrBtn.addEventListener('click', async () => {
+    scanQrBtn.disabled = true;
+    scanFeedback.textContent = 'Preparando o leitor de QR Code...';
+    try {
+      const [{ BarcodeScanner, BarcodeFormat }, { Capacitor }] = await Promise.all([
+        import('@capacitor-mlkit/barcode-scanning'),
+        import('@capacitor/core')
+      ]);
+      if (Capacitor.getPlatform() !== 'android') {
+        throw new Error('A leitura pela câmera está disponível no aplicativo Android.');
+      }
+
+      const { supported } = await BarcodeScanner.isSupported();
+      if (!supported) throw new Error('Este aparelho não possui uma câmera compatível.');
+      const { available } = await BarcodeScanner.isGoogleBarcodeScannerModuleAvailable();
+      if (!available) {
+        scanFeedback.textContent = 'Instalando o leitor de QR Code do Google...';
+        await BarcodeScanner.installGoogleBarcodeScannerModule();
+        const resultadoInstalacao = await BarcodeScanner.isGoogleBarcodeScannerModuleAvailable();
+        if (!resultadoInstalacao.available) {
+          scanFeedback.textContent = 'A instalação foi iniciada. Aguarde alguns segundos e toque novamente para ler o QR Code.';
+          return;
+        }
+      }
+
+      scanFeedback.textContent = 'Aponte a câmera para o QR Code do livro.';
+      const resultado = await BarcodeScanner.scan({
+        formats: [BarcodeFormat.QrCode],
+        autoZoom: true
+      });
+      const valor = resultado.barcodes?.[0]?.rawValue;
+      if (!valor) {
+        scanFeedback.textContent = 'Nenhum QR Code foi lido.';
+        return;
+      }
+      const token = extrairTokenRastreio(valor);
+      if (!token) throw new Error('O QR Code não contém um link ou token válido.');
+      window.location.href = `./rastreio.html?token=${encodeURIComponent(token)}`;
+    } catch (erro) {
+      console.error('Erro ao ler QR Code:', erro);
+      scanFeedback.textContent = erro.message || 'Não foi possível abrir o leitor de QR Code.';
+    } finally {
+      scanQrBtn.disabled = false;
+    }
+  });
 }
 
 /**
