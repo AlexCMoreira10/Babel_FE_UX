@@ -111,7 +111,11 @@
 
           <fieldset class="cadastro-fieldset">
             <legend>Localização aproximada <span>(opcional)</span></legend>
-            <p class="small-text">Informe as coordenadas em graus decimais. Elas serão enviadas como longitude e latitude.</p>
+            <p class="small-text">Use sua localização atual para preencher as coordenadas. A localização é opcional e só será consultada após sua autorização.</p>
+            <div class="localizacao-acoes">
+              <button id="usarLocalizacao" class="btn-secondary" type="button">Usar minha localização</button>
+              <span id="localizacaoFeedback" class="small-text" role="status" aria-live="polite"></span>
+            </div>
             <div class="form-grid">
               <div class="form-group">
                 <label for="longitude">Longitude</label>

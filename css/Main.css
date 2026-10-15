@@ -186,6 +186,33 @@ ion-content {
   line-height: 1.5;
 }
 
+.localizacao-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.localizacao-acoes button {
+  justify-content: center;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.localizacao-acoes button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.localizacao-acoes .small-text.erro {
+  color: #b42318;
+}
+
+.localizacao-acoes .small-text.sucesso {
+  color: var(--primary-strong);
+}
+
 .cep-busca {
   display: flex;
   gap: 10px;
@@ -504,6 +531,32 @@ ion-content {
   border: 1px solid rgba(32,49,61,0.1);
   color: var(--text);
   padding: 12px 18px;
+}
+
+.detalhes-info #contactButton,
+#sendContactBtn {
+  border: 0;
+  border-radius: 14px;
+  background: #5b91bd;
+  color: white;
+  padding: 14px 24px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.detalhes-info #contactButton {
+  font-size: 16px;
+  padding: 16px 28px;
+  box-shadow: 0 6px 16px rgba(91, 145, 189, 0.28);
+}
+
+.detalhes-info #contactButton:hover,
+#sendContactBtn:hover {
+  background: #3d76a3;
+  box-shadow: 0 8px 20px rgba(61, 118, 163, 0.3);
+  transform: translateY(-1px);
 }
 
 .modal-overlay {
@@ -1823,10 +1876,10 @@ ion-content {
 }
 
 .btn-enviar-msg {
-  background: var(--primary);
+  background: #5b91bd;
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 50%;
   width: 40px;
   height: 40px;
   display: flex;
@@ -1838,7 +1891,7 @@ ion-content {
 }
 
 .btn-enviar-msg:hover {
-  background: var(--primary-strong);
+  background: #3d76a3;
 }
 
 .btn-msg {

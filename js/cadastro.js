@@ -30,10 +30,13 @@ const dataNascimentoInput = document.getElementById("dataNascimento");
 const cepInput = document.getElementById("cep");
 const cepFeedback = document.getElementById("cepFeedback");
 const consultarCepBtn = document.getElementById("consultarCep");
+const usarLocalizacaoBtn = document.getElementById("usarLocalizacao");
+const localizacaoFeedback = document.getElementById("localizacaoFeedback");
 let cepConsultado = "";
 let cepConsultaAtual = "";
 let cepConsultaPromise = null;
 let cepConsultaController = null;
+let localizacaoEmAndamento = false;
 
 function mostrarFeedback(mensagem, tipo = "") {
   cadastroFeedback.textContent = mensagem;
@@ -111,6 +114,68 @@ async function consultarCep() {
   })();
 
   return cepConsultaPromise;
+}
+
+function obterMensagemErroLocalizacao(erro) {
+  switch (erro.code) {
+    case 1:
+      return "Permissão de localização negada. Autorize o acesso nas configurações do navegador ou do dispositivo.";
+    case 2:
+      return "Sua localização não está disponível. Confira o sinal/GPS e tente novamente.";
+    case 3:
+      return "A localização demorou demais para ser obtida. Tente novamente.";
+    default:
+      return "Não foi possível obter sua localização. Você pode informar as coordenadas manualmente.";
+  }
+}
+
+function usarLocalizacaoAtual() {
+  if (localizacaoEmAndamento) return;
+
+  if (!window.isSecureContext) {
+    localizacaoFeedback.textContent = "A localização automática exige HTTPS (ou localhost).";
+    localizacaoFeedback.classList.add("erro");
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    localizacaoFeedback.textContent = "Este navegador não oferece suporte à localização. Informe as coordenadas manualmente.";
+    localizacaoFeedback.classList.add("erro");
+    return;
+  }
+
+  localizacaoEmAndamento = true;
+  usarLocalizacaoBtn.disabled = true;
+  usarLocalizacaoBtn.textContent = "Obtendo localização...";
+  localizacaoFeedback.classList.remove("erro", "sucesso");
+  localizacaoFeedback.textContent = "Aguardando autorização e posição do dispositivo...";
+
+  navigator.geolocation.getCurrentPosition(
+    ({ coords }) => {
+      document.getElementById("longitude").value = String(coords.longitude);
+      document.getElementById("latitude").value = String(coords.latitude);
+      localizacaoFeedback.textContent = "Localização preenchida. As coordenadas ainda podem ser editadas.";
+      localizacaoFeedback.classList.add("sucesso");
+      finalizarLocalizacao();
+    },
+    erro => {
+      console.warn("Não foi possível obter a localização do usuário:", erro);
+      localizacaoFeedback.textContent = obterMensagemErroLocalizacao(erro);
+      localizacaoFeedback.classList.add("erro");
+      finalizarLocalizacao();
+    },
+    {
+      enableHighAccuracy: false,
+      maximumAge: 60000,
+      timeout: 15000
+    }
+  );
+}
+
+function finalizarLocalizacao() {
+  localizacaoEmAndamento = false;
+  usarLocalizacaoBtn.disabled = false;
+  usarLocalizacaoBtn.textContent = "Usar minha localização";
 }
 
 function obterMensagemErroApi(corpo, status) {
@@ -263,6 +328,7 @@ telefonesList.addEventListener("click", evento => {
 });
 
 consultarCepBtn.addEventListener("click", consultarCep);
+usarLocalizacaoBtn.addEventListener("click", usarLocalizacaoAtual);
 cepInput.addEventListener("blur", () => {
   if (cepInput.value.trim()) consultarCep();
 });

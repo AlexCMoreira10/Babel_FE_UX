@@ -17,6 +17,11 @@ const firebaseConfig = {
   appId: "1:537037438052:web:7ae0839725eaf0bbb73371"
 };
 
+const URL_BASE_LOCAL = "http://localhost:3000/api";
+const URL_BASE_REMOTE = "https://babel-be-lovat.vercel.app/api";
+const URL_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  ? URL_BASE_LOCAL
+  : URL_BASE_REMOTE;
 const auth = getAuth(initializeApp(firebaseConfig));
 const provider = new GoogleAuthProvider();
 const loginBtn = document.getElementById("loginBtn");
@@ -35,8 +40,30 @@ function mensagemErroLogin(erro) {
   return mensagens[erro.code] || "Não foi possível entrar. Tente novamente.";
 }
 
+async function sincronizarUsuario(token) {
+  let resposta;
+  try {
+    resposta = await fetch(`${URL_BASE}/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  } catch (erro) {
+    if (URL_BASE !== URL_BASE_LOCAL) throw erro;
+    console.warn(`Falha ao conectar em ${URL_BASE_LOCAL}, tentando ${URL_BASE_REMOTE}...`);
+    resposta = await fetch(`${URL_BASE_REMOTE}/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
+
+  if (!resposta.ok) {
+    const detalhe = await resposta.text();
+    throw new Error(`Não foi possível sincronizar o usuário com o sistema (HTTP ${resposta.status})${detalhe ? `: ${detalhe}` : "."}`);
+  }
+}
+
 async function salvarSessao(usuario) {
   const token = await usuario.getIdToken();
+  await sincronizarUsuario(token);
+
   const dadosUsuario = {
     displayName: usuario.displayName || usuario.email,
     email: usuario.email,
@@ -81,7 +108,9 @@ if (emailLoginForm) {
       await salvarSessao(resultado.user);
     } catch (erro) {
       console.error("Erro no login com e-mail:", erro);
-      loginFeedback.textContent = mensagemErroLogin(erro);
+      loginFeedback.textContent = erro.message?.startsWith("Não foi possível sincronizar")
+        ? "Não foi possível preparar sua conta no sistema. Tente novamente."
+        : mensagemErroLogin(erro);
       emailLoginBtn.disabled = false;
       loginBtn.disabled = false;
     }
@@ -101,7 +130,9 @@ if (loginBtn) {
       await salvarSessao(usuario);
     } catch (erro) {
       console.error("Erro no login com Google:", erro);
-      loginFeedback.textContent = "Não foi possível entrar com o Google. Tente novamente.";
+      loginFeedback.textContent = erro.message?.startsWith("Não foi possível sincronizar")
+        ? "Não foi possível preparar sua conta no sistema. Tente novamente."
+        : "Não foi possível entrar com o Google. Tente novamente.";
       loginBtn.disabled = false;
       emailLoginBtn.disabled = false;
     }

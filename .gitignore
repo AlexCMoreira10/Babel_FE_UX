@@ -4,4 +4,11 @@ android/
 !android/
 android/*
 !android/variables.gradle
+!android/app/
+android/app/*
+!android/app/src/
+android/app/src/*
+!android/app/src/main/
+android/app/src/main/*
+!android/app/src/main/AndroidManifest.xml
 node_modules/
