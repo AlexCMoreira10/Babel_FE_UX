@@ -547,7 +547,8 @@ function criarCardLivroAcervo(livro) {
   const id = String(livro.id || livro._id || '');
   const titulo = escaparHtml(livro.titulo || 'Livro sem título');
   const estado = livro.estadoAcervo || 'normal';
-  const estadoBloqueado = ['roubado', 'danificado'].includes(estado);
+  const marcadoRoubadoPerdido = ['roubado', 'perdido'].includes(estado);
+  const estadoBloqueado = estado !== 'normal';
   const tokenRastreio = livro.tokenRastreio || livro.token || '';
   const qrSalvo = obterQrLivro(id);
   const qrCode = livro.qrCode || livro.qr?.qrCode || livro.data?.qrCode || qrSalvo?.qrCode || '';
@@ -560,13 +561,13 @@ function criarCardLivroAcervo(livro) {
       <div class="book-info">
         <h3>${titulo}</h3>
         <p class="autor">${escaparHtml(livro.autor || 'Autor desconhecido')}</p>
-        <p class="acervo-status">Estado do exemplar: ${escaparHtml(estado)}</p>
+        <p class="acervo-status">Estado do exemplar: ${marcadoRoubadoPerdido ? 'Roubado ou perdido' : escaparHtml(estado)}</p>
         ${tokenRastreio ? `<a class="btn-detalhes" href="./rastreio.html?token=${encodeURIComponent(tokenRastreio)}">Ver histórico</a>` : ''}
         <button type="button" class="btn-secondary" data-action="show-qr" data-id="${escaparHtml(id)}" data-qr-code="${encodeURIComponent(qrCode)}" data-qr-url="${encodeURIComponent(qrUrl)}">Mostrar QR Code</button>
         <div class="book-qr hidden" data-qr-result="${escaparHtml(id)}"></div>
         <div class="acervo-actions">
           <button type="button" class="btn-secondary" data-action="mark-state" data-id="${escaparHtml(id)}" data-state="danificado" ${estadoBloqueado ? 'disabled' : ''}>Marcar danificado</button>
-          <button type="button" class="btn-danger" data-action="mark-state" data-id="${escaparHtml(id)}" data-state="roubado" ${estadoBloqueado ? 'disabled' : ''}>Marcar roubado</button>
+          <button type="button" class="${marcadoRoubadoPerdido ? 'btn-secondary' : 'btn-danger'}" data-action="mark-state" data-id="${escaparHtml(id)}" data-state="${marcadoRoubadoPerdido ? 'normal' : 'roubado'}" ${estadoBloqueado && !marcadoRoubadoPerdido ? 'disabled' : ''}>${marcadoRoubadoPerdido ? 'Desativar marcação' : 'Marcar roubado ou perdido'}</button>
         </div>
       </div>
     </article>`;
@@ -639,8 +640,16 @@ if (ownedBooksGrid) {
 
     const botao = evento.target.closest('[data-action="mark-state"]');
     if (!botao) return;
+    const ativando = botao.dataset.state !== 'normal';
+    const confirmacao = ativando
+      ? 'Confirma marcar este livro como roubado ou perdido? Ele deixará de aparecer no catálogo e não poderá ser negociado.'
+      : 'Confirma desativar a marcação de roubado ou perdido? O livro poderá voltar a aparecer no catálogo, conforme o status do anúncio.';
+    if (!window.confirm(confirmacao)) return;
+
     botao.disabled = true;
-    shelfMessage.textContent = 'Atualizando o estado do exemplar...';
+    shelfMessage.textContent = ativando
+      ? 'Marcando o livro como roubado ou perdido...'
+      : 'Desativando a marcação do livro...';
     try {
       await requisitarApiLivros(`/me/estante/${encodeURIComponent(botao.dataset.id)}/estado`, {
         method: 'PUT',
