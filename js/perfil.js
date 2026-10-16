@@ -17,6 +17,8 @@ const scanQrBtn = document.getElementById('scanQrBtn');
 const scanFeedback = document.getElementById('scanFeedback');
 const notificationsList = document.getElementById('notificationsList');
 const notificationsMessage = document.getElementById('notificationsMessage');
+const notificacoesAquisicaoVistas = new Set();
+let notificacoesCarregadas = false;
 
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
@@ -134,6 +136,15 @@ async function carregarNotificacoes() {
 
     const dados = await resposta.json();
     const notificacoes = Array.isArray(dados) ? dados : Array.isArray(dados.notificacoes) ? dados.notificacoes : [];
+    const novaSolicitacao = notificacoesCarregadas && notificacoes.some(notificacao =>
+      notificacao.acao === 'revisar-aquisicao'
+      && notificacao.id
+      && !notificacoesAquisicaoVistas.has(notificacao.id)
+    );
+    notificacoes
+      .filter(notificacao => notificacao.acao === 'revisar-aquisicao' && notificacao.id)
+      .forEach(notificacao => notificacoesAquisicaoVistas.add(notificacao.id));
+    notificacoesCarregadas = true;
 
     if (notificacoes.length === 0) {
       notificationsMessage.textContent = 'Nenhuma notificação no momento.';
@@ -142,6 +153,7 @@ async function carregarNotificacoes() {
 
     notificationsMessage.textContent = `Você tem ${notificacoes.length} notificações.`;
     notificationsList.innerHTML = notificacoes.map(criarCardNotificacao).join('');
+    if (novaSolicitacao) await carregarMeusAnuncios();
   } catch (erro) {
     console.error('Erro ao carregar notificações:', erro);
     notificationsMessage.textContent = 'Não foi possível carregar notificações. Tente novamente.';
@@ -157,15 +169,18 @@ function criarCardNotificacao(notificacao) {
   const displayDate = data ? new Date(data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
 
   return `
-    <div class="notification-card ${lida ? 'notification-read' : 'notification-unread'}" data-id="${id}">
-      <div class="notification-title">${titulo}</div>
-      <div class="notification-body">${texto}</div>
+    <div class="notification-card ${lida ? 'notification-read' : 'notification-unread'}" data-id="${escaparHtml(id)}">
+      <div class="notification-title">${escaparHtml(titulo)}</div>
+      <div class="notification-body">${escaparHtml(texto)}</div>
       <div class="notification-meta">
-        <span>${displayDate}</span>
+        <span>${escaparHtml(displayDate)}</span>
         <span>${lida ? 'Lida' : 'Não lida'}</span>
       </div>
       <div class="notification-actions">
-        <button type="button" class="btn-secondary" data-action="mark-read" data-id="${id}" ${lida ? 'disabled' : ''}>Marcar como lida</button>
+        ${notificacao.acao === 'revisar-aquisicao' && notificacao.livroId
+          ? `<button type="button" class="btn-add" data-action="review-transfer" data-id="${escaparHtml(notificacao.livroId)}">Revisar pedido</button>`
+          : ''}
+        <button type="button" class="btn-secondary" data-action="mark-read" data-id="${escaparHtml(id)}" ${lida ? 'disabled' : ''}>Marcar como lida</button>
       </div>
     </div>
   `;
@@ -200,11 +215,24 @@ async function marcarNotificacaoLida(notificacaoId) {
 
 if (notificationsList) {
   notificationsList.addEventListener('click', event => {
-    const button = event.target.closest('[data-action="mark-read"]');
-    if (!button) return;
-    const notificacaoId = button.dataset.id;
-    marcarNotificacaoLida(notificacaoId);
+    const botaoRevisar = event.target.closest('[data-action="review-transfer"]');
+    if (botaoRevisar) {
+      carregarMeusAnuncios().then(() => {
+        const card = profileAdsGrid.querySelector(`[data-livro-id="${CSS.escape(botaoRevisar.dataset.id)}"]`);
+        card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      return;
+    }
+
+    const botaoLida = event.target.closest('[data-action="mark-read"]');
+    if (botaoLida) marcarNotificacaoLida(botaoLida.dataset.id);
   });
+}
+
+if (notificationsList && notificationsMessage) {
+  window.setInterval(() => {
+    if (document.visibilityState === 'visible') carregarNotificacoes();
+  }, 30000);
 }
 
 function criarCardAnuncio(livro) {
@@ -474,7 +502,7 @@ function criarNovoCardAnuncio(livro) {
     : '';
 
   return `
-    <article class="book-card" data-tipo="${escaparHtml(tipo)}">
+    <article class="book-card" data-tipo="${escaparHtml(tipo)}" data-livro-id="${escaparHtml(id)}">
       <div class="imagem" style="background-image:url('${escaparHtml(livro.imagem || livro.fotos?.[0] || '')}')">
         <span class="tag ${escaparHtml(tipo)}">${tipo === 'doacao' ? 'Doação' : tipo === 'venda' ? 'Venda' : 'Troca'}</span>
       </div>
@@ -536,14 +564,26 @@ function criarCardLivroAcervo(livro) {
     </article>`;
 }
 
-function mostrarQrDoAnuncio(qrCodeCodificado, qrUrlCodificada, container) {
+async function mostrarQrDoAnuncio(livroId, qrCodeCodificado, qrUrlCodificada, container) {
   container.classList.remove('hidden');
-  const qrCode = decodeURIComponent(qrCodeCodificado || '');
-  const qrUrl = decodeURIComponent(qrUrlCodificada || '');
+  let qrCode = decodeURIComponent(qrCodeCodificado || '');
+  let qrUrl = decodeURIComponent(qrUrlCodificada || '');
+  if (!qrCode) {
+    container.textContent = 'Gerando QR Code...';
+    try {
+      const dados = await requisitarApiLivros(`/livros/${encodeURIComponent(livroId)}/qrcode`);
+      qrCode = dados?.qrCode || dados?.qr?.qrCode || dados?.data?.qrCode || '';
+      qrUrl = dados?.qrUrl || dados?.qr?.qrUrl || dados?.data?.qrUrl || qrUrl;
+    } catch (erro) {
+      console.error('Erro ao gerar QR Code do livro:', erro);
+      container.textContent = `Não foi possível gerar o QR Code: ${erro.message}`;
+      return;
+    }
+  }
   const token = qrUrl ? extrairTokenRastreio(qrUrl) : '';
   container.innerHTML = qrCode
-    ? `<img src="${escaparHtml(qrCode)}" alt="QR Code para rastrear o livro">${token ? `<a href="./rastreio.html?token=${encodeURIComponent(token)}">Abrir histórico no app</a>` : ''}`
-    : `O QR Code não foi retornado pela API para este livro.${token ? ` <a href="./rastreio.html?token=${encodeURIComponent(token)}">Abrir histórico no app</a>` : ''}`;
+    ? `<img src="${escaparHtml(qrCode)}" alt="QR Code para negociar o livro">${token ? `<a href="./rastreio.html?token=${encodeURIComponent(token)}">Abrir negociação no app</a>` : ''}`
+    : `A API não retornou uma imagem de QR Code para este livro.${token ? ` <a href="./rastreio.html?token=${encodeURIComponent(token)}">Abrir negociação no app</a>` : ''}`;
 }
 
 if (profileAdsGrid) {
@@ -554,7 +594,7 @@ if (profileAdsGrid) {
     const livroId = botao.dataset.id;
     if (botao.dataset.action === 'show-qr') {
       const output = profileAdsGrid.querySelector(`[data-qr-result="${CSS.escape(livroId)}"]`);
-      if (output) mostrarQrDoAnuncio(botao.dataset.qrCode, botao.dataset.qrUrl, output);
+      if (output) await mostrarQrDoAnuncio(livroId, botao.dataset.qrCode, botao.dataset.qrUrl, output);
       return;
     }
 
@@ -585,7 +625,7 @@ if (ownedBooksGrid) {
     const qrButton = evento.target.closest('[data-action="show-qr"]');
     if (qrButton) {
       const output = ownedBooksGrid.querySelector(`[data-qr-result="${CSS.escape(qrButton.dataset.id)}"]`);
-      if (output) mostrarQrDoAnuncio(qrButton.dataset.qrCode, qrButton.dataset.qrUrl, output);
+      if (output) await mostrarQrDoAnuncio(qrButton.dataset.id, qrButton.dataset.qrCode, qrButton.dataset.qrUrl, output);
       return;
     }
 

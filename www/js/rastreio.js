@@ -10,6 +10,7 @@ const aquisicaoFeedback = document.getElementById('aquisicaoFeedback');
 const aquisicaoModal = document.getElementById('aquisicaoModal');
 const formAquisicao = document.getElementById('formAquisicao');
 const aquisicaoModalFeedback = document.getElementById('aquisicaoModalFeedback');
+const tipoNegociacaoSelect = document.getElementById('tipoNegociacao');
 const formAvaliacao = document.getElementById('formAvaliacao');
 const avaliacaoFeedback = document.getElementById('avaliacaoFeedback');
 let rastreio = null;
@@ -45,6 +46,41 @@ function carregarLivro(livro) {
       <p><strong>Condição:</strong> ${escaparHtml(livro.condicao || 'Não informada')}</p>
       <p><strong>Proprietário atual:</strong> ${escaparHtml(livro.proprietarioAtual?.nome || livro.proprietario?.nome || livro.usuario?.nome || 'Informação não disponível')}</p>
     </div>`;
+}
+
+function prepararPedidoAquisicao(livro) {
+  const tipoNegociacao = ['doacao', 'troca', 'venda'].includes(livro.tipo)
+    ? livro.tipo
+    : 'troca';
+  tipoNegociacaoSelect.value = tipoNegociacao;
+  atualizarTituloAquisicao();
+
+  let usuarioId = null;
+  try {
+    usuarioId = JSON.parse(localStorage.getItem('usuario') || 'null')?.uid || null;
+  } catch (erro) {
+    console.warn('Não foi possível ler o usuário atual para verificar a propriedade.', erro);
+  }
+
+  aquisicaoBtn.classList.remove('hidden');
+  if (usuarioId && usuarioId === livro.usuarioId) {
+    statusEl.textContent = 'Este livro já pertence à sua conta.';
+    aquisicaoBtn.classList.add('hidden');
+    return;
+  }
+
+  aquisicaoModal.classList.remove('hidden');
+}
+
+function atualizarTituloAquisicao() {
+  const nomesNegociacao = {
+    doacao: 'doação',
+    troca: 'troca',
+    venda: 'compra'
+  };
+  const tipo = tipoNegociacaoSelect.value;
+  document.getElementById('aquisicaoTitulo').textContent =
+    `Deseja solicitar ${nomesNegociacao[tipo] || 'negociação'} deste livro?`;
 }
 
 function renderizarHistorico() {
@@ -101,8 +137,8 @@ async function carregarRastreio() {
 
     carregarLivro(rastreio.livro);
     renderizarHistorico();
-    statusEl.textContent = 'Confira a trajetória deste exemplar.';
-    aquisicaoBtn.classList.remove('hidden');
+    statusEl.textContent = 'Confirme se deseja solicitar a negociação deste livro.';
+    prepararPedidoAquisicao(rastreio.livro);
   } catch (erro) {
     console.error('Erro ao carregar histórico do livro:', erro);
     statusEl.textContent = erro.status === 404 && erro.message.includes('Cannot GET')
@@ -114,11 +150,6 @@ async function carregarRastreio() {
 }
 
 aquisicaoBtn.addEventListener('click', () => {
-  if (!localStorage.getItem('token')) {
-    const destino = encodeURIComponent(window.location.href);
-    window.location.href = `./login.html?returnUrl=${destino}`;
-    return;
-  }
   aquisicaoModal.classList.remove('hidden');
 });
 
@@ -127,8 +158,16 @@ document.getElementById('cancelarAquisicaoBtn').addEventListener('click', () => 
   aquisicaoModalFeedback.textContent = '';
 });
 
+tipoNegociacaoSelect.addEventListener('change', atualizarTituloAquisicao);
+
 formAquisicao.addEventListener('submit', async evento => {
   evento.preventDefault();
+  if (!localStorage.getItem('token')) {
+    const destino = encodeURIComponent(window.location.href);
+    window.location.href = `./login.html?returnUrl=${destino}`;
+    return;
+  }
+
   const botao = document.getElementById('confirmarAquisicaoBtn');
   botao.disabled = true;
   aquisicaoModalFeedback.textContent = 'Enviando pedido...';
@@ -143,7 +182,8 @@ formAquisicao.addEventListener('submit', async evento => {
     );
     aquisicaoModal.classList.add('hidden');
     aquisicaoBtn.classList.add('hidden');
-    aquisicaoFeedback.textContent = 'Pedido enviado. A transferência só será concluída após a confirmação do proprietário atual.';
+    statusEl.textContent = 'Pedido enviado ao vendedor.';
+    aquisicaoFeedback.textContent = 'O vendedor recebeu uma notificação e precisa confirmar a negociação. O livro só será transferido após essa confirmação.';
   } catch (erro) {
     console.error('Erro ao solicitar aquisição:', erro);
     aquisicaoModalFeedback.textContent = erro.status === 401

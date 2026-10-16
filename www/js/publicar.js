@@ -109,13 +109,35 @@ if (form) {
         qrCode: livroCriado?.qrCode || livroCriado?.qr?.qrCode || '',
         qrUrl: livroCriado?.qrUrl || livroCriado?.qr?.qrUrl || ''
       };
+      let detalheFalhaQr = '';
+      if (!dadosQr.qrCode && (dadosQr.id || dadosQr._id)) {
+        try {
+          const idLivro = encodeURIComponent(dadosQr.id || dadosQr._id);
+          const respostaQr = await fetchComFallback(`${URL_BASE}/livros/${idLivro}/qrcode`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const qrGerado = await respostaQr.json().catch(() => null);
+          if (!respostaQr.ok) {
+            throw new Error(qrGerado?.erro || qrGerado?.message || `HTTP ${respostaQr.status}`);
+          }
+          dadosQr.qrCode = qrGerado?.qrCode || qrGerado?.qr?.qrCode || '';
+          dadosQr.qrUrl = qrGerado?.qrUrl || qrGerado?.qr?.qrUrl || dadosQr.qrUrl;
+        } catch (erroQr) {
+          detalheFalhaQr = erroQr.message;
+          console.error('Livro publicado, mas a API não conseguiu gerar o QR Code:', erroQr);
+        }
+      }
       sessionStorage.setItem('livroPublicadoQr', JSON.stringify(dadosQr));
       try {
         salvarQrLivro(dadosQr);
       } catch (erroArmazenamento) {
         console.error('Não foi possível salvar o QR Code para as próximas visitas:', erroArmazenamento);
       }
-      alert('Livro publicado com sucesso! O QR Code ficará disponível no seu perfil.');
+      if (dadosQr.qrCode && dadosQr.qrUrl) {
+        alert('Livro publicado com sucesso! O QR Code ficará disponível no seu perfil.');
+      } else {
+        alert(`Livro publicado com sucesso, mas não foi possível gerar o QR Code.${detalheFalhaQr ? ` API: ${detalheFalhaQr}` : ' A API não retornou os dados do QR.'} O livro já foi salvo; não é necessário publicá-lo novamente.`);
+      }
       window.location.href = './perfil.html';
     } catch (error) {
       console.error('Erro ao publicar:', error);
