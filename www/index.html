@@ -108,7 +108,7 @@
         <div class="filtro-box">
           <div class="campo-busca">
             <ion-icon name="search-outline"></ion-icon>
-            <input type="text" id="pesquisa" placeholder="Buscar por título ou autor...">
+            <input type="text" id="pesquisa" placeholder="Buscar por título...">
             <button id="searchBtn" class="btn-add">Pesquisar</button>
           </div>
 
@@ -129,10 +129,6 @@
         </div>
 
         <div id="carregandoEstante" class="carregando" style="display:none;">Aguarde enquanto carregamos a sua estante...</div>
-          <div id="authBanner" style="display:none; margin:16px 0;" class="erro-mensagem">
-            <p>Sua sessão expirou ou você não está autenticado. <a href="./html/login.html" style="font-weight:700; color:inherit; text-decoration:underline;">Entrar com Google</a></p>
-          </div>
-
         <section id="gridLivros" class="grid-livros"></section>
 
         <div class="paginacao" id="paginacao">
@@ -200,96 +196,7 @@ async function fetchComFallback(url, options = {}) {
   }
 }
 
-let livros = [
-  {
-    id: '1',
-    titulo: '1984',
-    autor: 'George Orwell',
-    condicao: 'Muito Bom',
-    tipo: 'troca',
-    localizacao: 'São Paulo, SP',
-    usuario: 'Maria Silva',
-    preco: null,
-    imagem: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '2',
-    titulo: 'O Senhor dos Anéis',
-    autor: 'J.R.R. Tolkien',
-    condicao: 'Novo',
-    tipo: 'venda',
-    localizacao: 'Rio de Janeiro, RJ',
-    usuario: 'João Santos',
-    preco: 45.00,
-    imagem: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '3',
-    titulo: 'Dom Casmurro',
-    autor: 'Machado de Assis',
-    condicao: 'Bom',
-    tipo: 'doacao',
-    localizacao: 'Belo Horizonte, MG',
-    usuario: 'Ana Costa',
-    preco: null,
-    imagem: 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '4',
-    titulo: 'Harry Potter e a Pedra Filosofal',
-    autor: 'J.K. Rowling',
-    condicao: 'Muito Bom',
-    tipo: 'troca',
-    localizacao: 'Curitiba, PR',
-    usuario: 'Pedro Oliveira',
-    preco: null,
-    imagem: 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '5',
-    titulo: 'A Culpa é das Estrelas',
-    autor: 'John Green',
-    condicao: 'Bom',
-    tipo: 'venda',
-    localizacao: 'Porto Alegre, RS',
-    usuario: 'Carla Mendes',
-    preco: 25.00,
-    imagem: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '6',
-    titulo: 'O Pequeno Príncipe',
-    autor: 'Antoine de Saint-Exupéry',
-    condicao: 'Muito Bom',
-    tipo: 'doacao',
-    localizacao: 'Salvador, BA',
-    usuario: 'Lucas Ferreira',
-    preco: null,
-    imagem: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '7',
-    titulo: 'Orgulho e Preconceito',
-    autor: 'Jane Austen',
-    condicao: 'Novo',
-    tipo: 'venda',
-    localizacao: 'Brasília, DF',
-    usuario: 'Beatriz Lima',
-    preco: 35.00,
-    imagem: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '8',
-    titulo: 'A Metamorfose',
-    autor: 'Franz Kafka',
-    condicao: 'Bom',
-    tipo: 'troca',
-    localizacao: 'Recife, PE',
-    usuario: 'Rafael Souza',
-    preco: null,
-    imagem: 'https://images.unsplash.com/photo-1526243741027-444d633d7365?auto=format&fit=crop&w=800&q=80'
-  }
-];
+let livros = [];
 
 const grid = document.getElementById('gridLivros') || document.querySelector('.grid-livros');
 const input = document.getElementById('pesquisa');
@@ -300,111 +207,24 @@ let tipoSelecionado = 'todos';
 // paginação
 let currentPage = 1;
 const pageSize = 16;
-let serverMode = true; // se true, buscamos páginas do backend
 let lastFetchedCount = 0;
+let requisicaoLivrosAtual = 0;
 const carregandoEstante = document.getElementById('carregandoEstante');
 const prevPageBtn = document.getElementById('prevPage');
 const nextPageBtn = document.getElementById('nextPage');
 const pageIndicator = document.getElementById('pageIndicator');
 
-async function buscarLivrosApi(page = 1) {
-  let showTimer;
-
-  try {
-    const token = localStorage.getItem('token');
-    const headers = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    // mostra mensagem de carregamento se demorar
-    showTimer = setTimeout(() => {
-      if (carregandoEstante) carregandoEstante.style.display = 'flex';
-    }, 700);
-
-    const resposta = await fetchComFallback(`${URL_BASE}/livros?page=${page}&limit=${pageSize}`, {
-      headers: headers
-    });
-    clearTimeout(showTimer);
-    if (carregandoEstante) carregandoEstante.style.display = 'none';
-    
-      // tratar auth errors explicitamente
-      if (resposta.status === 401 || resposta.status === 403) {
-        console.warn('Requisição não autorizada (401/403).');
-        const authBanner = document.getElementById('authBanner');
-        if (authBanner) authBanner.style.display = 'block';
-        if (page === 1) {
-          serverMode = false;
-          currentPage = 1;
-          filtrarLivros();
-          return;
-        }
-        throw new Error(`Status ${resposta.status}`);
-      }
-
-    if (!resposta.ok) {
-      throw new Error(`Status ${resposta.status}`);
-    }
-
-    const dados = await resposta.json();
-    console.log('Resposta da API:', dados);
-
-    // Aceita varios formatos de resposta
-    let lista = [];
-    if (Array.isArray(dados)) lista = dados;
-    else if (Array.isArray(dados.livros)) lista = dados.livros;
-    else if (Array.isArray(dados.dados)) lista = dados.dados;
-    else if (Array.isArray(dados.data)) lista = dados.data;
-    else lista = [];
-
-    // se nada encontrado na primeira página, usa fallback local
-    if (page === 1 && lista.length === 0) {
-      console.warn('API retornou vazio; usando dados locais de fallback');
-      serverMode = false;
-      currentPage = 1;
-      filtrarLivros();
-      return;
-    }
-
-    // servidor retornou resultados (página)
-    serverMode = true;
-    lastFetchedCount = lista.length;
-    renderServerBooks(lista);
-    updatePaginationButtons();
-    console.log(`Carregados ${lista.length} livros (página ${page})`);
-  } catch (erro) {
-    console.warn('Não foi possível carregar livros da API:', erro);
-    // fallback para local se página 1
-    if (page === 1) {
-      serverMode = false;
-      currentPage = 1;
-      filtrarLivros();
-      return;
-    }
-  } finally {
-    clearTimeout(showTimer);
-    if (carregandoEstante) carregandoEstante.style.display = 'none';
-    console.log('Busca concluída');
-  }
-}
-
-// Busca aplicada ao backend com filtros e termo de pesquisa
 async function fetchFiltered(page = 1) {
+  const requestId = ++requisicaoLivrosAtual;
   let showTimer;
 
   try {
-    const token = localStorage.getItem('token');
-    const headers = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
     const termo = (input.value || '').trim();
     const params = new URLSearchParams();
     params.set('page', page);
     params.set('limit', pageSize);
     if (tipoSelecionado && tipoSelecionado !== 'todos') params.set('tipo', tipoSelecionado);
-    if (termo) {
-      // envia termo tanto em titulo quanto em autor para aumentar chance de match
-      params.set('titulo', termo);
-      params.set('autor', termo);
-    }
+    if (termo) params.set('titulo', termo);
 
     showTimer = setTimeout(() => {
       if (carregandoEstante) carregandoEstante.style.display = 'flex';
@@ -413,17 +233,11 @@ async function fetchFiltered(page = 1) {
     const url = `${URL_BASE}/livros?${params.toString()}`;
     console.log('Fetch filtered URL:', url);
 
-    const resposta = await fetchComFallback(url, { headers });
+    const resposta = await fetchComFallback(url);
     clearTimeout(showTimer);
-    if (carregandoEstante) carregandoEstante.style.display = 'none';
 
     if (resposta.status === 401 || resposta.status === 403) {
-      const authBanner = document.getElementById('authBanner');
-      if (authBanner) authBanner.style.display = 'block';
-      serverMode = false;
-      currentPage = 1;
-      filtrarLivros();
-      return;
+      throw new Error(`Requisição não autorizada (status ${resposta.status})`);
     }
 
     if (!resposta.ok) throw new Error(`Status ${resposta.status}`);
@@ -437,28 +251,23 @@ async function fetchFiltered(page = 1) {
     else if (Array.isArray(dados.dados)) lista = dados.dados;
     else if (Array.isArray(dados.data)) lista = dados.data;
 
-    if (page === 1 && lista.length === 0) {
-      console.warn('API filtrada retornou vazio; usando fallback local');
-      serverMode = false;
-      currentPage = 1;
-      filtrarLivros();
-      return;
-    }
-
-    serverMode = true;
+    if (requestId !== requisicaoLivrosAtual) return;
     lastFetchedCount = lista.length;
     renderServerBooks(lista);
     updatePaginationButtons();
   } catch (erro) {
-    console.warn('Erro ao buscar filtrado no backend:', erro);
-    if (page === 1) {
-      serverMode = false;
-      currentPage = 1;
-      filtrarLivros();
-    }
+    if (requestId !== requisicaoLivrosAtual) return;
+    console.error('Erro ao buscar livros no backend:', erro);
+    livros = [];
+    grid.textContent = 'Não foi possível buscar livros no servidor. Tente novamente.';
+    atualizarContador(0);
+    lastFetchedCount = 0;
+    updatePaginationButtons();
   } finally {
     clearTimeout(showTimer);
-    if (carregandoEstante) carregandoEstante.style.display = 'none';
+    if (requestId === requisicaoLivrosAtual && carregandoEstante) {
+      carregandoEstante.style.display = 'none';
+    }
   }
 }
 
@@ -472,6 +281,13 @@ function debounce(fn, wait) {
 }
 
 function renderServerBooks(arr) {
+  livros = arr;
+  if (arr.length === 0) {
+    grid.textContent = 'Nenhum livro encontrado.';
+    atualizarContador(0);
+    updatePaginationButtons();
+    return;
+  }
   grid.innerHTML = arr.map(criarCard).join('');
   atualizarContador(arr.length);
   pageIndicator.textContent = `Página ${currentPage}`;
@@ -541,37 +357,9 @@ function atualizarContador(total) {
   contador.textContent = `${total} item${total === 1 ? '' : 's'} encontrado${total === 1 ? '' : 's'}`;
 }
 
-function filtrarLivros() {
-  // aplica filtros sobre os dados locais (fallback)
-  const termo = input.value.trim().toLowerCase();
-  const filtrados = livros.filter(livro => {
-    const matchTipo = tipoSelecionado === 'todos' || livro.tipo === tipoSelecionado;
-    const texto = `${livro.titulo} ${livro.autor}`.toLowerCase();
-    const matchTexto = texto.includes(termo);
-    return matchTipo && matchTexto;
-  });
-
-  // paginação local
-  const total = filtrados.length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  if (currentPage > totalPages) currentPage = totalPages;
-
-  const start = (currentPage - 1) * pageSize;
-  const pageItems = filtrados.slice(start, start + pageSize);
-
-  grid.innerHTML = pageItems.map(criarCard).join('');
-  atualizarContador(total);
-
-  // atualizar controles
-  if (pageIndicator) pageIndicator.textContent = `Página ${currentPage} / ${totalPages}`;
-  if (prevPageBtn) prevPageBtn.disabled = currentPage <= 1;
-  if (nextPageBtn) nextPageBtn.disabled = currentPage >= totalPages;
-}
-
 const debouncedSearch = debounce(() => {
   currentPage = 1;
-  if (serverMode) fetchFiltered(1);
-  else filtrarLivros();
+  fetchFiltered(1);
 }, 500);
 
 input.addEventListener('input', debouncedSearch);
@@ -582,8 +370,7 @@ if (input) {
     if (e.key === 'Enter') {
       e.preventDefault();
       currentPage = 1;
-      if (serverMode) fetchFiltered(1);
-      else filtrarLivros();
+      fetchFiltered(1);
     }
   });
 }
@@ -592,23 +379,19 @@ if (input) {
 if (searchBtn) {
   searchBtn.addEventListener('click', () => {
     currentPage = 1;
-    if (serverMode) fetchFiltered(1);
-    else filtrarLivros();
+    fetchFiltered(1);
   });
 }
 
 if (prevPageBtn) prevPageBtn.addEventListener('click', () => {
   if (currentPage <= 1) return;
   currentPage -= 1;
-  if (serverMode) fetchFiltered(currentPage);
-  else filtrarLivros();
+  fetchFiltered(currentPage);
 });
 
 if (nextPageBtn) nextPageBtn.addEventListener('click', () => {
-  // next page: if serverMode request next page; else advance local pages
   currentPage += 1;
-  if (serverMode) fetchFiltered(currentPage);
-  else filtrarLivros();
+  fetchFiltered(currentPage);
 });
 
 botoes.forEach(botao => {
@@ -617,8 +400,7 @@ botoes.forEach(botao => {
     botao.classList.add('ativo');
     tipoSelecionado = botao.dataset.tipo;
     currentPage = 1;
-    if (serverMode) fetchFiltered(1);
-    else filtrarLivros();
+    fetchFiltered(1);
   });
 });
 

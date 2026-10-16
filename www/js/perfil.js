@@ -17,8 +17,7 @@ const scanQrBtn = document.getElementById('scanQrBtn');
 const scanFeedback = document.getElementById('scanFeedback');
 const notificationsList = document.getElementById('notificationsList');
 const notificationsMessage = document.getElementById('notificationsMessage');
-const notificacoesAquisicaoVistas = new Set();
-let notificacoesCarregadas = false;
+const paginaPerfil = document.body.dataset.profilePage || 'perfil';
 
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
@@ -50,13 +49,22 @@ function carregarPerfil() {
 
   try {
     const usuario = JSON.parse(usuarioStr);
-    perfilNome.textContent = usuario.displayName || 'Usuário';
-    perfilEmail.textContent = usuario.email || 'Não informado';
-    perfilUid.textContent = usuario.uid || 'Não disponível';
-    mostrarQrPublicadoRecentemente();
-    carregarMeusAnuncios();
-    carregarEstante();
-    carregarNotificacoes();
+    if (perfilNome) perfilNome.textContent = usuario.displayName || 'Usuário';
+    if (perfilEmail) perfilEmail.textContent = usuario.email || 'Não informado';
+    if (perfilUid) perfilUid.textContent = usuario.uid || 'Não disponível';
+
+    document.querySelectorAll('[data-profile-link]').forEach(link => {
+      if (link.dataset.profileLink === paginaPerfil) {
+        link.setAttribute('aria-current', 'page');
+      } else {
+        link.removeAttribute('aria-current');
+      }
+    });
+
+    if (paginaPerfil === 'anuncios') carregarMeusAnuncios();
+    if (paginaPerfil === 'estante') carregarEstante();
+    if (paginaPerfil === 'notificacoes') carregarNotificacoes();
+    if (paginaPerfil === 'qrcode') mostrarQrPublicadoRecentemente();
   } catch (erro) {
     console.error('Erro ao carregar perfil:', erro);
     window.location.href = './login.html';
@@ -136,15 +144,6 @@ async function carregarNotificacoes() {
 
     const dados = await resposta.json();
     const notificacoes = Array.isArray(dados) ? dados : Array.isArray(dados.notificacoes) ? dados.notificacoes : [];
-    const novaSolicitacao = notificacoesCarregadas && notificacoes.some(notificacao =>
-      notificacao.acao === 'revisar-aquisicao'
-      && notificacao.id
-      && !notificacoesAquisicaoVistas.has(notificacao.id)
-    );
-    notificacoes
-      .filter(notificacao => notificacao.acao === 'revisar-aquisicao' && notificacao.id)
-      .forEach(notificacao => notificacoesAquisicaoVistas.add(notificacao.id));
-    notificacoesCarregadas = true;
 
     if (notificacoes.length === 0) {
       notificationsMessage.textContent = 'Nenhuma notificação no momento.';
@@ -153,7 +152,6 @@ async function carregarNotificacoes() {
 
     notificationsMessage.textContent = `Você tem ${notificacoes.length} notificações.`;
     notificationsList.innerHTML = notificacoes.map(criarCardNotificacao).join('');
-    if (novaSolicitacao) await carregarMeusAnuncios();
   } catch (erro) {
     console.error('Erro ao carregar notificações:', erro);
     notificationsMessage.textContent = 'Não foi possível carregar notificações. Tente novamente.';
@@ -217,10 +215,7 @@ if (notificationsList) {
   notificationsList.addEventListener('click', event => {
     const botaoRevisar = event.target.closest('[data-action="review-transfer"]');
     if (botaoRevisar) {
-      carregarMeusAnuncios().then(() => {
-        const card = profileAdsGrid.querySelector(`[data-livro-id="${CSS.escape(botaoRevisar.dataset.id)}"]`);
-        card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      });
+      window.location.href = `./anuncios.html?livroId=${encodeURIComponent(botaoRevisar.dataset.id)}`;
       return;
     }
 
@@ -264,11 +259,12 @@ const deleteModal = document.getElementById('deleteModal');
 const deleteModalText = document.getElementById('deleteModalText');
 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+const cancelDeleteBtnFooter = document.getElementById('cancelDeleteBtnFooter');
 
 function abrirModalRemocao(livroId) {
   pendingDeleteId = livroId;
   if (deleteModalText) {
-    deleteModalText.textContent = 'Deseja realmente remover este anúncio? Esta ação não pode ser desfeita.';
+    deleteModalText.textContent = 'Deseja retirar este anúncio do catálogo? O livro continuará na sua estante.';
   }
   if (deleteModal) deleteModal.classList.remove('hidden');
 }
@@ -302,19 +298,11 @@ async function finalizarRemocao(livroId) {
       throw new Error(`Falha ao remover anúncio: ${resposta.status} ${texto}`);
     }
 
-    profileSectionMessage.textContent = 'Anúncio removido com sucesso.';
-    const usuarioStr = localStorage.getItem('usuario');
-    if (usuarioStr) {
-      try {
-        const usuario = JSON.parse(usuarioStr);
-        carregarAnuncios(usuario);
-      } catch (erro) {
-        console.error('Erro ao recarregar anúncios após remover:', erro);
-      }
-    }
+    await Promise.all([carregarMeusAnuncios(), carregarEstante()]);
+    profileSectionMessage.textContent = 'Anúncio removido do catálogo; o livro continua na sua estante.';
   } catch (erro) {
     console.error(erro);
-    profileSectionMessage.textContent = 'Não foi possível remover o anúncio. Tente novamente.';
+    profileSectionMessage.textContent = `Não foi possível remover o anúncio: ${erro.message}`;
   }
 }
 
@@ -333,6 +321,10 @@ if (confirmDeleteBtn) {
 
 if (cancelDeleteBtn) {
   cancelDeleteBtn.addEventListener('click', fecharModalRemocao);
+}
+
+if (cancelDeleteBtnFooter) {
+  cancelDeleteBtnFooter.addEventListener('click', fecharModalRemocao);
 }
 
 if (refreshAdsBtn) {
@@ -442,17 +434,25 @@ function mostrarQrPublicadoRecentemente() {
   const secao = document.getElementById('recentBookQr');
   const conteudo = document.getElementById('recentBookQrContent');
   if (!secao || !conteudo) return;
+  const mensagem = document.getElementById('recentBookQrMessage');
 
   try {
     const livro = obterQrLivroPublicadoRecentemente();
-    if (!livro) return;
+    if (!livro) {
+      if (mensagem) mensagem.textContent = 'Nenhum QR Code recente foi encontrado. Publique um livro para gerar o primeiro código.';
+      return;
+    }
     if (livro.qrCode) {
       const token = livro.qrUrl ? extrairTokenRastreio(livro.qrUrl) : '';
       conteudo.innerHTML = `<p>${escaparHtml(livro.titulo || 'Livro publicado')}</p><img src="${escaparHtml(livro.qrCode)}" alt="QR Code para rastrear o livro">${token ? `<a href="./rastreio.html?token=${encodeURIComponent(token)}">Abrir histórico no app</a>` : ''}`;
       secao.classList.remove('hidden');
+      if (mensagem) mensagem.textContent = '';
+    } else if (mensagem) {
+      mensagem.textContent = 'O QR Code deste livro não está salvo neste dispositivo. Acesse Meus anúncios para gerar o código novamente.';
     }
   } catch (erro) {
     console.error('Não foi possível exibir o QR Code retornado pela publicação:', erro);
+    if (mensagem) mensagem.textContent = 'Não foi possível carregar o QR Code do livro.';
   }
 }
 
@@ -465,6 +465,7 @@ function obterListaApi(dados) {
 }
 
 async function carregarMeusAnuncios() {
+  if (!profileSectionMessage || !profileAdsGrid) return;
   profileSectionMessage.textContent = 'Carregando seus anúncios...';
   profileAdsGrid.innerHTML = '';
   try {
@@ -474,6 +475,11 @@ async function carregarMeusAnuncios() {
       ? `Você tem ${anuncios.length} anúncio${anuncios.length === 1 ? '' : 's'} publicado${anuncios.length === 1 ? '' : 's'}.`
       : 'Nenhum anúncio encontrado. Publique seu primeiro livro!';
     profileAdsGrid.innerHTML = anuncios.map(criarNovoCardAnuncio).join('');
+    const livroIdAlvo = new URLSearchParams(window.location.search).get('livroId');
+    if (livroIdAlvo) {
+      profileAdsGrid.querySelector(`[data-livro-id="${CSS.escape(livroIdAlvo)}"]`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   } catch (erro) {
     console.error('Erro ao carregar anúncios do usuário:', erro);
     profileSectionMessage.textContent = `Não foi possível carregar seus anúncios: ${erro.message}`;
@@ -513,6 +519,7 @@ function criarNovoCardAnuncio(livro) {
         <a href="./detalhes.html?id=${encodeURIComponent(id)}" class="btn-detalhes">Ver anúncio</a>
         <a href="./atualizarAnuncio.html?id=${encodeURIComponent(id)}" class="btn-add">Atualizar anúncio</a>
         <button type="button" class="btn-secondary" data-action="show-qr" data-id="${escaparHtml(id)}" data-qr-code="${encodeURIComponent(qrCode)}" data-qr-url="${encodeURIComponent(qrUrl)}">Mostrar QR Code</button>
+        <button type="button" class="btn-danger" data-action="delete-ad" data-id="${escaparHtml(id)}">Remover anúncio</button>
         <div class="book-qr hidden" data-qr-result="${escaparHtml(id)}"></div>
         ${pedido}
       </div>
@@ -520,6 +527,7 @@ function criarNovoCardAnuncio(livro) {
 }
 
 async function carregarEstante() {
+  if (!shelfMessage || !ownedBooksGrid) return;
   shelfMessage.textContent = 'Carregando os livros que você possui...';
   ownedBooksGrid.innerHTML = '';
   try {
@@ -527,7 +535,7 @@ async function carregarEstante() {
     const livros = obterListaApi(resposta);
     shelfMessage.textContent = livros.length
       ? `Você possui ${livros.length} livro${livros.length === 1 ? '' : 's'}.`
-      : 'Sua estante ainda está vazia. Livros adquiridos aparecem aqui após a confirmação do proprietário.';
+      : 'Sua estante ainda está vazia. Livros anunciados ou adquiridos aparecem aqui.';
     ownedBooksGrid.innerHTML = livros.map(criarCardLivroAcervo).join('');
   } catch (erro) {
     console.error('Erro ao carregar a estante:', erro);
@@ -709,7 +717,7 @@ if (scanQrBtn) {
  * Event Listener: Clicar no overlay (fundo escurecido)
  * Se clicar exatamente no overlay, fecha o modal
  */
-if (satisfacaoModal) {
+if (satisfacaoModal && paginaPerfil === 'perfil') {
   satisfacaoModal.addEventListener('click', (event) => {
     // Se o clique for no overlay e não no conteúdo do modal
     if (event.target === satisfacaoModal) {
@@ -763,14 +771,10 @@ if (agoraNaoBtn) {
  * 4. Marca como exibido para não aparecer novamente
  */
 window.addEventListener('DOMContentLoaded', () => {
-  // Carrega o perfil do usuário (função original)
   carregarPerfil();
-  
-  // Aguarda um pequeno tempo para garantir que o DOM está pronto
-  setTimeout(() => {
-    // Verifica se ainda não foi exibido nesta sessão
-    if (!jaMostrouModalNaSessao()) {
-      abrirModalSatisfacao();
-    }
-  }, 800);
+  if (paginaPerfil === 'perfil') {
+    setTimeout(() => {
+      if (!jaMostrouModalNaSessao()) abrirModalSatisfacao();
+    }, 800);
+  }
 });

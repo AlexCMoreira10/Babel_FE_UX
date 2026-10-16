@@ -17,7 +17,7 @@
   <script nomodule src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/@ionic/core@latest/css/ionic.bundle.css">
 </head>
-<body>
+<body data-profile-page="perfil">
 <ion-app>
   <ion-content fullscreen>
     <header class="navbar">
@@ -25,71 +25,54 @@
         <ion-icon name="book-outline"></ion-icon>
         <span>Estante</span>
       </div>
-      <a href="../index.html" class="btn-secondary">Voltar</a>
+      <a href="../index.html" class="btn-secondary">Voltar à estante</a>
     </header>
 
-    <main class="form-page">
-      <section class="form-card profile-card">
-        <div>
-          <span>Meu Perfil</span>
-          <h1>Bem-vindo à sua estante</h1>
-          <p>Aqui você vê suas informações e pode gerir seus anúncios.</p>
+    <main class="profile-workspace">
+      <nav class="profile-sidebar" aria-label="Menu do perfil">
+        <span class="profile-sidebar-title">Minha conta</span>
+        <a href="./perfil.html" data-profile-link="perfil" aria-current="page"><ion-icon name="person-outline"></ion-icon>Perfil</a>
+        <a href="./anuncios.html" data-profile-link="anuncios"><ion-icon name="albums-outline"></ion-icon>Meus anúncios</a>
+        <a href="./estante.html" data-profile-link="estante"><ion-icon name="library-outline"></ion-icon>Minha estante</a>
+        <a href="./notificacoes.html" data-profile-link="notificacoes"><ion-icon name="notifications-outline"></ion-icon>Notificações</a>
+        <a href="./qrcode.html" data-profile-link="qrcode"><ion-icon name="qr-code-outline"></ion-icon>QR Code publicado</a>
+        <button id="logoutBtn" type="button"><ion-icon name="log-out-outline"></ion-icon>Sair da conta</button>
+      </nav>
+
+      <section class="profile-content">
+        <div class="profile-page-heading">
+          <span>Minha conta</span>
+          <h1>Meu perfil</h1>
+          <p>Gerencie suas informações e preferências da conta.</p>
         </div>
 
         <div class="profile-info">
-          <div class="profile-item">
-            <strong>Nome</strong>
-            <p id="perfilNome">Carregando...</p>
-          </div>
-          <div class="profile-item">
-            <strong>E-mail</strong>
-            <p id="perfilEmail">Carregando...</p>
-          </div>
-          <div class="profile-item">
-            <strong>ID</strong>
-            <p id="perfilUid">Carregando...</p>
-          </div>
+          <div class="profile-item"><strong>Nome</strong><p id="perfilNome">Carregando...</p></div>
+          <div class="profile-item"><strong>E-mail</strong><p id="perfilEmail">Carregando...</p></div>
+          <div class="profile-item"><strong>ID</strong><p id="perfilUid">Carregando...</p></div>
         </div>
 
         <div class="form-actions">
-          <button id="logoutBtn" type="button">Sair</button>
-          <a href="publicar.html" class="btn-secondary">Publicar novo livro</a>
+          <a href="./publicar.html" class="btn-add">Publicar novo livro</a>
           <button id="scanQrBtn" type="button" class="btn-secondary">Ler QR Code de um livro</button>
         </div>
         <p id="scanFeedback" role="status" aria-live="polite"></p>
-
-        <section id="recentBookQr" class="profile-section hidden">
-          <div class="profile-section-header"><h2>QR Code do livro publicado</h2></div>
-          <div id="recentBookQrContent" class="book-qr"></div>
-        </section>
-
-        <div class="profile-section">
-          <div class="profile-section-header">
-            <h2>Seus anúncios</h2>
-          </div>
-          <p id="profileSectionMessage">Carregando seus anúncios...</p><br>
-          <div id="profileAdsGrid" class="grid-livros"></div>
-        </div>
-
-        <div class="profile-section">
-          <div class="profile-section-header">
-            <h2>Sua estante</h2>
-          </div>
-          <p id="shelfMessage">Carregando os livros que você possui...</p><br>
-          <div id="ownedBooksGrid" class="grid-livros"></div>
-        </div>
-
-        <div class="profile-section">
-          <div class="profile-section-header">
-            <h2>Notificações</h2>
-          </div>
-          <p id="notificationsMessage">Carregando notificações...</p><br>
-          <div id="notificationsList" class="notifications-list"></div>
-        </div>
       </section>
     </main>
   </ion-content>
 </ion-app>
+
+<div id="deleteModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+  <div class="modal-content">
+    <button id="cancelDeleteBtn" type="button" class="modal-close-btn" aria-label="Fechar modal">&times;</button>
+    <h2 id="deleteModalTitle">Remover anúncio</h2>
+    <p id="deleteModalText">Deseja retirar este anúncio do catálogo? O livro continuará na sua estante.</p>
+    <div class="modal-satisfacao-footer">
+      <button id="confirmDeleteBtn" type="button" class="btn-danger">Remover anúncio</button>
+      <button id="cancelDeleteBtnFooter" type="button" class="btn-secondary">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal de Pesquisa de Satisfação -->
 <div id="satisfacaoModal" class="modal-overlay hidden">
