@@ -1,14 +1,14 @@
 # Build para celular
-bash 
-npm init -y
-npm install @capacitor/core @capacitor/cli
-npm install @capacitor/android
+- bash 
+- npm init -y
+- npm install @capacitor/core @capacitor/cli
+- npm install @capacitor/android
 
-npx cap init "babel" "com.alexcmoreira.babel" --web-dir='www'
-npx cap add android
-npx cap copy
-npx cap sync 
-npx cap open android
+- npx cap init "babel" "com.alexcmoreira.babel" --web-dir='www'
+- npx cap add android
+- npx cap copy
+- npx cap sync 
+- npx cap open android
 
 # API de Livros - Uso no Postman
 
