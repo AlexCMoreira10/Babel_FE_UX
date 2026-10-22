@@ -3,6 +3,7 @@ import { requisitarApiLivros } from './books-api.js';
 const parametros = new URLSearchParams(window.location.search);
 const caminhoToken = window.location.pathname.match(/\/livros\/rastreio\/([^/]+)\/?$/)?.[1];
 const tokenRastreio = caminhoToken ? decodeURIComponent(caminhoToken) : parametros.get('token');
+const voltarHistoricoBtn = document.getElementById('voltarHistoricoBtn');
 const statusEl = document.getElementById('rastreioStatus');
 const livroEl = document.getElementById('rastreioLivro');
 const aquisicaoBtn = document.getElementById('adquirirLivroBtn');
@@ -22,9 +23,39 @@ function escaparHtml(valor) {
 }
 
 function formatarData(valor) {
+  if (valor && typeof valor === 'object' && !(valor instanceof Date)) {
+    valor = valor.dataInicio || valor.data_inicio || valor.data || valor.date
+      || valor.criadoEm || valor.createdAt || valor.created_at || valor.timestamp || valor.$date;
+  }
   if (!valor) return 'Data não informada';
   const data = new Date(valor);
-  return Number.isNaN(data.getTime()) ? String(valor) : data.toLocaleDateString('pt-BR');
+  return Number.isNaN(data.getTime())
+    ? (typeof valor === 'object' ? 'Data não informada' : String(valor))
+    : data.toLocaleDateString('pt-BR');
+}
+
+function obterTexto(valor, campos = ['nome', 'displayName', 'name', 'texto', 'mensagem', 'conteudo']) {
+  if (typeof valor === 'string' || typeof valor === 'number') return String(valor).trim();
+  if (!valor || typeof valor !== 'object') return '';
+  for (const campo of campos) {
+    const texto = obterTexto(valor[campo], campos);
+    if (texto) return texto;
+  }
+  return '';
+}
+
+function obterNomeLeitor(item) {
+  return obterTexto(item.nome)
+    || obterTexto(item.usuario)
+    || obterTexto(item.leitor)
+    || obterTexto(item.avaliador)
+    || obterTexto(item.proprietario)
+    || 'Leitor';
+}
+
+function obterComentario(item) {
+  return obterTexto(item.comentario, ['comentario', 'texto', 'mensagem', 'conteudo', 'descricao'])
+    || obterTexto(item.avaliacao, ['comentario', 'texto', 'mensagem', 'conteudo', 'descricao']);
 }
 
 function listar(dados, container, renderizar) {
@@ -89,7 +120,7 @@ function renderizarHistorico() {
   const avaliacoes = rastreio.avaliacoes || [];
   listar(posse, document.getElementById('historicoPosse'), item => `
     <article class="rastreio-item">
-      <strong>${escaparHtml(item.nome || item.usuario?.nome || 'Leitor')}</strong>
+      <strong>Proprietário: ${escaparHtml(obterNomeLeitor(item))}</strong>
       <span>${escaparHtml(formatarData(item.dataInicio || item.data_inicio || item.data))}</span>
       ${item.dataFim || item.data_fim ? `<span>Até ${escaparHtml(formatarData(item.dataFim || item.data_fim))}</span>` : `<span>${item.atual ? 'Proprietário atual' : 'Posse registrada'}</span>`}
     </article>`);
@@ -101,9 +132,9 @@ function renderizarHistorico() {
     </article>`);
   listar(avaliacoes, document.getElementById('avaliacoes'), item => `
     <article class="rastreio-item">
-      <strong>${escaparHtml(item.nome || item.usuario?.nome || 'Leitor')}</strong>
-      <span>${escaparHtml(formatarData(item.data || item.criadoEm))}</span>
-      <p>${escaparHtml(item.comentario || '')}</p>
+      <strong>Leitor: ${escaparHtml(obterNomeLeitor(item))}</strong>
+      <span>${escaparHtml(formatarData(item.data || item.criadoEm || item.createdAt || item.created_at || item.dataPublicacao || item.data_publicacao || item.publicadoEm))}</span>
+      <p>${escaparHtml(obterComentario(item))}</p>
     </article>`);
 
   let usuarioId = null;
@@ -120,6 +151,10 @@ function renderizarHistorico() {
     String(item.uid || item.usuarioId || item.id_usuario || item.usuario?.uid || '') === usuarioId
   );
   formAvaliacao.classList.toggle('hidden', !usuarioId || !idsProprietarios.includes(String(usuarioId)) || jaAvaliou);
+}
+
+if (voltarHistoricoBtn && parametros.get('origem') === 'estante') {
+  voltarHistoricoBtn.href = './estante.html';
 }
 
 async function carregarRastreio() {

@@ -553,6 +553,7 @@ function criarCardLivroAcervo(livro) {
   const qrSalvo = obterQrLivro(id);
   const qrCode = livro.qrCode || livro.qr?.qrCode || livro.data?.qrCode || qrSalvo?.qrCode || '';
   const qrUrl = livro.qrUrl || livro.qr?.qrUrl || livro.data?.qrUrl || qrSalvo?.qrUrl || '';
+  const tokenNegociacao = tokenRastreio || (qrUrl ? extrairTokenRastreio(qrUrl) : '');
   const imagem = Array.isArray(livro.fotos) ? livro.fotos[0] : livro.imagem || livro.foto;
 
   return `
@@ -562,7 +563,7 @@ function criarCardLivroAcervo(livro) {
         <h3>${titulo}</h3>
         <p class="autor">${escaparHtml(livro.autor || 'Autor desconhecido')}</p>
         <p class="acervo-status">Estado do exemplar: ${marcadoRoubadoPerdido ? 'Roubado ou perdido' : escaparHtml(estado)}</p>
-        ${tokenRastreio ? `<a class="btn-detalhes" href="./rastreio.html?token=${encodeURIComponent(tokenRastreio)}">Ver histórico</a>` : ''}
+        <button type="button" class="btn-add" data-action="open-history" data-id="${escaparHtml(id)}" data-token="${escaparHtml(tokenNegociacao)}">Abrir negociações</button>
         <button type="button" class="btn-secondary" data-action="show-qr" data-id="${escaparHtml(id)}" data-qr-code="${encodeURIComponent(qrCode)}" data-qr-url="${encodeURIComponent(qrUrl)}">Mostrar QR Code</button>
         <div class="book-qr hidden" data-qr-result="${escaparHtml(id)}"></div>
         <div class="acervo-actions">
@@ -573,7 +574,19 @@ function criarCardLivroAcervo(livro) {
     </article>`;
 }
 
-async function mostrarQrDoAnuncio(livroId, qrCodeCodificado, qrUrlCodificada, container) {
+async function abrirNegociacoes(livroId, tokenConhecido) {
+  let token = tokenConhecido;
+  if (!token) {
+    const dados = await requisitarApiLivros(`/livros/${encodeURIComponent(livroId)}/qrcode`);
+    const qrUrl = dados?.qrUrl || dados?.qr?.qrUrl || dados?.data?.qrUrl || '';
+    token = dados?.tokenRastreio || dados?.token || dados?.qr?.tokenRastreio
+      || dados?.data?.tokenRastreio || (qrUrl ? extrairTokenRastreio(qrUrl) : '');
+  }
+  if (!token) throw new Error('A API não retornou um identificador para abrir as negociações.');
+  window.location.href = `./rastreio.html?token=${encodeURIComponent(token)}&origem=estante`;
+}
+
+async function mostrarQrDoAnuncio(livroId, qrCodeCodificado, qrUrlCodificada, container, origem) {
   container.classList.remove('hidden');
   let qrCode = decodeURIComponent(qrCodeCodificado || '');
   let qrUrl = decodeURIComponent(qrUrlCodificada || '');
@@ -590,9 +603,10 @@ async function mostrarQrDoAnuncio(livroId, qrCodeCodificado, qrUrlCodificada, co
     }
   }
   const token = qrUrl ? extrairTokenRastreio(qrUrl) : '';
+  const parametroOrigem = origem ? `&origem=${encodeURIComponent(origem)}` : '';
   container.innerHTML = qrCode
-    ? `<img src="${escaparHtml(qrCode)}" alt="QR Code para negociar o livro">${token ? `<a href="./rastreio.html?token=${encodeURIComponent(token)}">Abrir negociação no app</a>` : ''}`
-    : `A API não retornou uma imagem de QR Code para este livro.${token ? ` <a href="./rastreio.html?token=${encodeURIComponent(token)}">Abrir negociação no app</a>` : ''}`;
+    ? `<img src="${escaparHtml(qrCode)}" alt="QR Code para negociar o livro">${token ? `<a href="./rastreio.html?token=${encodeURIComponent(token)}${parametroOrigem}">Abrir negociação no app</a>` : ''}`
+    : `A API não retornou uma imagem de QR Code para este livro.${token ? ` <a href="./rastreio.html?token=${encodeURIComponent(token)}${parametroOrigem}">Abrir negociação no app</a>` : ''}`;
 }
 
 if (profileAdsGrid) {
@@ -603,7 +617,7 @@ if (profileAdsGrid) {
     const livroId = botao.dataset.id;
     if (botao.dataset.action === 'show-qr') {
       const output = profileAdsGrid.querySelector(`[data-qr-result="${CSS.escape(livroId)}"]`);
-      if (output) await mostrarQrDoAnuncio(livroId, botao.dataset.qrCode, botao.dataset.qrUrl, output);
+      if (output) await mostrarQrDoAnuncio(livroId, botao.dataset.qrCode, botao.dataset.qrUrl, output, 'anuncios');
       return;
     }
 
@@ -631,10 +645,30 @@ if (profileAdsGrid) {
 
 if (ownedBooksGrid) {
   ownedBooksGrid.addEventListener('click', async evento => {
+    const botao = evento.target.closest('[data-action="open-history"]');
+    if (!botao) return;
+
+    botao.disabled = true;
+    const textoOriginal = botao.textContent;
+    botao.textContent = 'Abrindo...';
+    try {
+      await abrirNegociacoes(botao.dataset.id, botao.dataset.token);
+    } catch (erro) {
+      console.error('Erro ao abrir as negociações do livro:', erro);
+      shelfMessage.textContent = `Não foi possível abrir as negociações: ${erro.message}`;
+    } finally {
+      botao.disabled = false;
+      botao.textContent = textoOriginal;
+    }
+  });
+}
+
+if (ownedBooksGrid) {
+  ownedBooksGrid.addEventListener('click', async evento => {
     const qrButton = evento.target.closest('[data-action="show-qr"]');
     if (qrButton) {
       const output = ownedBooksGrid.querySelector(`[data-qr-result="${CSS.escape(qrButton.dataset.id)}"]`);
-      if (output) await mostrarQrDoAnuncio(qrButton.dataset.id, qrButton.dataset.qrCode, qrButton.dataset.qrUrl, output);
+      if (output) await mostrarQrDoAnuncio(qrButton.dataset.id, qrButton.dataset.qrCode, qrButton.dataset.qrUrl, output, 'estante');
       return;
     }
 
@@ -666,11 +700,13 @@ if (ownedBooksGrid) {
 
 function extrairTokenRastreio(valor) {
   try {
-    const url = new URL(valor);
+    const url = new URL(valor, window.location.href);
     const correspondencia = url.pathname.match(/\/livros\/rastreio\/([^/]+)\/?$/);
-    return correspondencia ? decodeURIComponent(correspondencia[1]) : url.searchParams.get('token');
+    return correspondencia
+      ? decodeURIComponent(correspondencia[1])
+      : url.searchParams.get('token') || valor.trim();
   } catch {
-    return valor.trim();
+    return typeof valor === 'string' ? valor.trim() : '';
   }
 }
 
