@@ -2055,6 +2055,7 @@ ion-content {
 .btn-msg {
   background: var(--primary);
   color: white;
+  border-radius: 14px;
   padding: 12px 18px;
 }
 
