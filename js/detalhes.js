@@ -1,3 +1,5 @@
+import { normalizarUrlImagem, resolverUrlImagem } from './image-utils.js';
+
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
 
@@ -74,7 +76,7 @@ function extrairUrlImagem(valor) {
 
 function obterImagemLivro(livro) {
   const imagem = extrairUrlImagem(livro.fotos ?? livro.imagem ?? livro.foto ?? null);
-  return imagem || 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80';
+  return resolverUrlImagem(imagem);
 }
 
 function mostrarCarregando() {
@@ -167,8 +169,7 @@ function renderizarDetalhes(livro) {
   imagemDiv.style.display = 'block';
 
   if (imgUrl) {
-    const safeUrl = imgUrl.replace(/"/g, '%22');
-    imagemDiv.innerHTML = `<img class="imagem-grande-img" src="${safeUrl}" alt="Capa do livro">`;
+    imagemDiv.innerHTML = `<img class="imagem-grande-img" src="${imgUrl}" alt="Capa do livro">`;
   } else {
     imagemDiv.innerHTML = '📚';
     imagemDiv.style.fontSize = '64px';
@@ -181,9 +182,9 @@ function renderizarDetalhes(livro) {
   try {
     galeriaImagens = [];
     if (Array.isArray(livro.fotos) && livro.fotos.length) {
-      galeriaImagens = livro.fotos.map(f => extrairUrlImagem(f)).filter(Boolean);
+      galeriaImagens = livro.fotos.map(f => normalizarUrlImagem(extrairUrlImagem(f))).filter(Boolean);
     }
-    const imgFromMain = extrairUrlImagem(livro.imagem ?? livro.foto ?? null);
+    const imgFromMain = normalizarUrlImagem(extrairUrlImagem(livro.imagem ?? livro.foto ?? null));
     if (imgFromMain && !galeriaImagens.includes(imgFromMain)) galeriaImagens.unshift(imgFromMain);
   } catch (e) {
     galeriaImagens = [imgUrl].filter(Boolean);
@@ -308,7 +309,7 @@ function showGalleryImage(idx) {
   if (idx >= galeriaImagens.length) idx = 0;
   galeriaIndex = idx;
   const imgEl = document.getElementById('galleryImage');
-  if (imgEl) imgEl.src = galeriaImagens[galeriaIndex];
+  if (imgEl) imgEl.src = resolverUrlImagem(galeriaImagens[galeriaIndex]);
   updateThumbnailSelection();
 }
 
@@ -325,7 +326,7 @@ function renderizarThumbnails(imagens) {
   container.innerHTML = imagens
     .map((url, index) => `
       <button type="button" class="thumbnail-item${index === 0 ? ' active' : ''}" data-index="${index}">
-        <img src="${url}" alt="Imagem ${index + 1}">
+        <img src="${resolverUrlImagem(url)}" alt="Imagem ${index + 1}">
       </button>
     `)
     .join('');
@@ -494,7 +495,8 @@ function criarCardRecomendacao(livro) {
 
   return `
     <article class="book-card" data-tipo="${tipo}">
-      <div class="imagem" style="background-image:url('${imagem}')">
+      <div class="imagem">
+        <img src="${imagem}" alt="Capa de ${livro.titulo || 'livro'}">
         <span class="tag ${tipo}">${tipo === 'doacao' ? 'Doação' : tipo === 'venda' ? 'Venda' : 'Troca'}</span>
       </div>
       <div class="book-info">

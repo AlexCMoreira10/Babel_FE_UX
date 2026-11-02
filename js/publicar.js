@@ -1,4 +1,5 @@
 import { salvarQrLivro } from './books-api.js';
+import { validarListaUrlsImagem } from './image-utils.js';
 
 const form = document.getElementById('formPublicar');
 const tipoSelect = document.getElementById('tipo');
@@ -57,6 +58,13 @@ if (form) {
       return;
     }
 
+    const { urls: fotos, invalidas } = validarListaUrlsImagem(form.fotos.value);
+    if (invalidas.length) {
+      alert(`Confira as URLs das imagens. Use endereços válidos iniciados por http:// ou https://.\n\nInválida(s): ${invalidas.join(', ')}`);
+      form.fotos.focus();
+      return;
+    }
+
     const data = {
       titulo: form.titulo.value.trim(),
       autor: form.autor.value.trim(),
@@ -71,7 +79,7 @@ if (form) {
         interesses: form.trocasInteresses.value.split(',').map(item => item.trim()).filter(Boolean),
         aceitaRetirada: form.aceitaRetirada.checked
       },
-      fotos: form.fotos.value.split(',').map(url => url.trim()).filter(Boolean),
+      fotos,
       localizacao: form.localizacao.value.trim()
     };
 

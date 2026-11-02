@@ -3,6 +3,7 @@ import {
   obterQrLivroPublicadoRecentemente,
   requisitarApiLivros
 } from './books-api.js';
+import { resolverUrlImagem } from './image-utils.js';
 
 const perfilNome = document.getElementById('perfilNome');
 const perfilEmail = document.getElementById('perfilEmail');
@@ -231,14 +232,15 @@ if (notificationsList && notificationsMessage) {
 }
 
 function criarCardAnuncio(livro) {
-  const imagem = livro.imagem || (Array.isArray(livro.fotos) && livro.fotos.length ? livro.fotos[0] : 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80');
+  const imagem = resolverUrlImagem(livro.imagem || (Array.isArray(livro.fotos) && livro.fotos.length ? livro.fotos[0] : ''));
   const tipo = livro.tipo || 'troca';
   const preco = livro.preco ? ` • R$ ${livro.preco.toFixed(2).replace('.', ',')}` : '';
   const livroId = livro._id || livro.id || '';
 
   return `
     <article class="book-card" data-tipo="${tipo}">
-      <div class="imagem" style="background-image:url('${imagem}')">
+      <div class="imagem">
+        <img src="${escaparHtml(imagem)}" alt="Capa de ${escaparHtml(livro.titulo || 'livro')}">
         <span class="tag ${tipo}">${tipo === 'doacao' ? 'Doação' : tipo === 'venda' ? 'Venda' : 'Troca'}</span>
       </div>
       <div class="book-info">
@@ -486,6 +488,7 @@ async function carregarMeusAnuncios() {
 function criarNovoCardAnuncio(livro) {
   const id = String(livro.id || livro._id || '');
   const tipo = livro.tipo || 'troca';
+  const imagem = resolverUrlImagem(livro.imagem || livro.fotos?.[0] || livro.foto || '');
   const qrSalvo = obterQrLivro(id);
   const qrCode = livro.qrCode || livro.qr?.qrCode || livro.data?.qrCode || qrSalvo?.qrCode || '';
   const qrUrl = livro.qrUrl || livro.qr?.qrUrl || livro.data?.qrUrl || qrSalvo?.qrUrl || '';
@@ -506,7 +509,8 @@ function criarNovoCardAnuncio(livro) {
 
   return `
     <article class="book-card" data-tipo="${escaparHtml(tipo)}" data-livro-id="${escaparHtml(id)}">
-      <div class="imagem" style="background-image:url('${escaparHtml(livro.imagem || livro.fotos?.[0] || '')}')">
+      <div class="imagem">
+        <img src="${escaparHtml(imagem)}" alt="Capa de ${escaparHtml(livro.titulo || 'livro')}">
         <span class="tag ${escaparHtml(tipo)}">${tipo === 'doacao' ? 'Doação' : tipo === 'venda' ? 'Venda' : 'Troca'}</span>
       </div>
       <div class="book-info">
@@ -551,11 +555,11 @@ function criarCardLivroAcervo(livro) {
   const qrCode = livro.qrCode || livro.qr?.qrCode || livro.data?.qrCode || qrSalvo?.qrCode || '';
   const qrUrl = livro.qrUrl || livro.qr?.qrUrl || livro.data?.qrUrl || qrSalvo?.qrUrl || '';
   const tokenNegociacao = tokenRastreio || (qrUrl ? extrairTokenRastreio(qrUrl) : '');
-  const imagem = Array.isArray(livro.fotos) ? livro.fotos[0] : livro.imagem || livro.foto;
+  const imagem = resolverUrlImagem(Array.isArray(livro.fotos) ? livro.fotos[0] : livro.imagem || livro.foto || '');
 
   return `
     <article class="book-card owned-book-card">
-      ${imagem ? `<img class="owned-book-cover" src="${escaparHtml(imagem)}" alt="Capa de ${titulo}">` : ''}
+      <img class="owned-book-cover" src="${escaparHtml(imagem)}" alt="Capa de ${titulo}">
       <div class="book-info">
         <h3>${titulo}</h3>
         <p class="autor">${escaparHtml(livro.autor || 'Autor desconhecido')}</p>

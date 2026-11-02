@@ -1,4 +1,5 @@
 import { requisitarApiLivros } from './books-api.js';
+import { resolverUrlImagem } from './image-utils.js';
 
 const parametros = new URLSearchParams(window.location.search);
 const caminhoToken = window.location.pathname.match(/\/livros\/rastreio\/([^/]+)\/?$/)?.[1];
@@ -67,9 +68,9 @@ function listar(dados, container, renderizar) {
 
 function carregarLivro(livro) {
   document.getElementById('rastreioTitulo').textContent = livro.titulo || 'Histórico do livro';
-  const imagem = Array.isArray(livro.fotos) ? livro.fotos[0] : livro.imagem || livro.foto || '';
+  const imagem = resolverUrlImagem(Array.isArray(livro.fotos) ? livro.fotos[0] : livro.imagem || livro.foto || '');
   livroEl.innerHTML = `
-    ${imagem ? `<img src="${escaparHtml(imagem)}" alt="Capa de ${escaparHtml(livro.titulo)}">` : ''}
+    <img src="${escaparHtml(imagem)}" alt="Capa de ${escaparHtml(livro.titulo)}">
     <div>
       <h2>${escaparHtml(livro.titulo || 'Livro sem título')}</h2>
       <p>${escaparHtml(livro.autor || 'Autor desconhecido')}</p>

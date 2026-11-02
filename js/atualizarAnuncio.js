@@ -1,3 +1,5 @@
+import { validarListaUrlsImagem } from './image-utils.js';
+
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
 
@@ -77,6 +79,13 @@ formAtualizar.addEventListener('submit', async (event) => {
     return;
   }
 
+  const { urls: fotos, invalidas } = validarListaUrlsImagem(fotosInput.value);
+  if (invalidas.length) {
+    alert(`Confira as URLs das imagens. Use endereços válidos iniciados por http:// ou https://.\n\nInválida(s): ${invalidas.join(', ')}`);
+    fotosInput.focus();
+    return;
+  }
+
   const payload = {
     titulo: tituloInput.value.trim(),
     autor: autorInput.value.trim(),
@@ -91,10 +100,7 @@ formAtualizar.addEventListener('submit', async (event) => {
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean),
-    fotos: fotosInput.value
-      .split(',')
-      .map((url) => url.trim())
-      .filter(Boolean),
+    fotos,
     trocas: {
       interesses: trocasInput.value
         .split(',')
