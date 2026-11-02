@@ -253,7 +253,7 @@ function criarCardAnuncio(livro) {
         <p class="localizacao">📍 ${livro.localizacao || 'Local não informado'}</p>
         <a href="./detalhes.html?id=${livroId}" class="btn-detalhes">Ver anúncio</a>
         <a href="./atualizarAnuncio.html?id=${livroId}" class="btn-add">Atualizar anúncio</a>
-        <button type="button" class="btn-danger" data-action="delete-ad" data-id="${livroId}">Remover anúncio</button>
+        <button type="button" class="btn-danger" data-action="delete-ad" data-id="${livroId}">Excluir anúncio</button>
       </div>
     </article>
   `;
@@ -264,11 +264,12 @@ const deleteModal = document.getElementById('deleteModal');
 const deleteModalText = document.getElementById('deleteModalText');
 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+const cancelDeleteBtnFooter = document.getElementById('cancelDeleteBtnFooter');
 
 function abrirModalRemocao(livroId) {
   pendingDeleteId = livroId;
   if (deleteModalText) {
-    deleteModalText.textContent = 'Deseja realmente remover este anúncio? Esta ação não pode ser desfeita.';
+    deleteModalText.textContent = 'Deseja retirar este anúncio do catálogo? O livro continuará na sua estante.';
   }
   if (deleteModal) deleteModal.classList.remove('hidden');
 }
@@ -280,28 +281,20 @@ function fecharModalRemocao() {
 
 async function confirmarRemocao() {
   if (!pendingDeleteId) return;
-  finalizarRemocao(pendingDeleteId);
+  await finalizarRemocao(pendingDeleteId);
 }
 
 async function finalizarRemocao(livroId) {
-  fecharModalRemocao();
-
-  const token = localStorage.getItem('token');
-  const headers = { 'Content-Type': 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
+  if (confirmDeleteBtn) {
+    confirmDeleteBtn.disabled = true;
+    confirmDeleteBtn.textContent = 'Excluindo...';
+  }
   try {
     profileSectionMessage.textContent = 'Removendo anúncio...';
-    const resposta = await fetchComFallback(`${URL_BASE}/livros/${livroId}`, {
+    await requisitarApiLivros(`/livros/${encodeURIComponent(livroId)}`, {
       method: 'DELETE',
-      headers
     });
-
-    if (!resposta.ok) {
-      const texto = await resposta.text();
-      throw new Error(`Falha ao remover anúncio: ${resposta.status} ${texto}`);
-    }
-
+    fecharModalRemocao();
     profileSectionMessage.textContent = 'Anúncio removido com sucesso.';
     const usuarioStr = localStorage.getItem('usuario');
     if (usuarioStr) {
@@ -314,7 +307,12 @@ async function finalizarRemocao(livroId) {
     }
   } catch (erro) {
     console.error(erro);
-    profileSectionMessage.textContent = 'Não foi possível remover o anúncio. Tente novamente.';
+    profileSectionMessage.textContent = `Não foi possível remover o anúncio: ${erro.message}`;
+  } finally {
+    if (confirmDeleteBtn) {
+      confirmDeleteBtn.disabled = false;
+      confirmDeleteBtn.textContent = 'Excluir anúncio';
+    }
   }
 }
 
@@ -333,6 +331,10 @@ if (confirmDeleteBtn) {
 
 if (cancelDeleteBtn) {
   cancelDeleteBtn.addEventListener('click', fecharModalRemocao);
+}
+
+if (cancelDeleteBtnFooter) {
+  cancelDeleteBtnFooter.addEventListener('click', fecharModalRemocao);
 }
 
 if (refreshAdsBtn) {

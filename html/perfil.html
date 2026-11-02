@@ -91,6 +91,18 @@
   </ion-content>
 </ion-app>
 
+<div id="deleteModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+  <div class="modal-content">
+    <button id="cancelDeleteBtn" type="button" class="modal-close-btn" aria-label="Fechar confirmação">&times;</button>
+    <h2 id="deleteModalTitle">Excluir anúncio</h2>
+    <p id="deleteModalText">Deseja retirar este anúncio do catálogo? O livro continuará na sua estante.</p>
+    <div class="modal-satisfacao-footer">
+      <button id="confirmDeleteBtn" type="button" class="btn-danger">Excluir anúncio</button>
+      <button id="cancelDeleteBtnFooter" type="button" class="btn-secondary">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal de Pesquisa de Satisfação -->
 <div id="satisfacaoModal" class="modal-overlay hidden">
   <div class="modal-content modal-satisfacao">
