@@ -3,6 +3,12 @@ import { validarListaUrlsImagem } from './image-utils.js';
 
 const form = document.getElementById('formPublicar');
 const tipoSelect = document.getElementById('tipo');
+const idiomaSelect = document.getElementById('idioma');
+const idiomaOutroInput = document.getElementById('idiomaOutro');
+const generoOutroInput = document.getElementById('generoOutro');
+const interesseOutroInput = document.getElementById('interesseOutro');
+const cepPublicacaoInput = document.getElementById('localizacao');
+const cepPublicacaoFeedback = document.getElementById('cepPublicacaoFeedback');
 const precoGroup = document.getElementById('precoGroup');
 const dimensoesEnvioGroup = document.getElementById('dimensoesEnvioGroup');
 const tamanhoLivroSelect = document.getElementById('tamanhoLivro');
@@ -15,6 +21,12 @@ const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
 
 let URL_BASE = URL_BASE_LOCAL;
+
+function formatarCep(valor) {
+  const digitos = String(valor || '').replace(/\D/g, '');
+  if (digitos.length !== 8) return '';
+  return `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
+}
 
 async function fetchComFallback(url, options = {}) {
   try {
@@ -29,6 +41,39 @@ async function fetchComFallback(url, options = {}) {
     }
     throw erro;
   }
+}
+
+async function preencherCepDoCadastro() {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    cepPublicacaoFeedback.textContent = 'Entre na sua conta para preencher o CEP cadastrado.';
+    return;
+  }
+
+  try {
+    const resposta = await fetchComFallback(`${URL_BASE}/me`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!resposta.ok) {
+      throw new Error(`Não foi possível consultar o cadastro (HTTP ${resposta.status}).`);
+    }
+
+    const perfil = await resposta.json();
+    const cep = formatarCep(perfil.endereco?.cep);
+    if (cep) {
+      cepPublicacaoInput.value = cep;
+      cepPublicacaoFeedback.textContent = 'CEP carregado do seu cadastro. Somente o CEP será usado como localização do anúncio.';
+    } else {
+      cepPublicacaoFeedback.textContent = 'Não há um CEP válido no seu cadastro. Informe o CEP de origem do livro.';
+    }
+  } catch (erro) {
+    console.error('Não foi possível carregar o CEP do cadastro:', erro);
+    cepPublicacaoFeedback.textContent = `${erro.message} Informe o CEP de origem manualmente.`;
+  }
+}
+
+if (cepPublicacaoInput && cepPublicacaoFeedback) {
+  preencherCepDoCadastro();
 }
 
 function atualizarVisibilidadePreco() {
@@ -46,12 +91,45 @@ function aplicarTamanhoLivro() {
   comprimentoPacoteInput.value = comprimento;
 }
 
+function configurarCampoOutro(nomeGrupo, campoOutro) {
+  const checkboxOutro = form.querySelector(`input[name="${nomeGrupo}"][value="Outro"]`);
+  const atualizarCampo = () => {
+    campoOutro.hidden = !checkboxOutro.checked;
+    campoOutro.required = checkboxOutro.checked;
+    if (!checkboxOutro.checked) campoOutro.value = '';
+  };
+  checkboxOutro.addEventListener('change', atualizarCampo);
+  atualizarCampo();
+}
+
+function obterSelecoesComOutro(nomeGrupo, campoOutro) {
+  const selecoes = Array.from(form.querySelectorAll(`input[name="${nomeGrupo}"]:checked`))
+    .map(checkbox => checkbox.value)
+    .filter(valor => valor !== 'Outro');
+  const outroSelecionado = form.querySelector(`input[name="${nomeGrupo}"][value="Outro"]`).checked;
+  const valorOutro = campoOutro.value.trim();
+
+  if (outroSelecionado && !valorOutro) {
+    campoOutro.focus();
+    throw new Error('Preencha o campo “Outro” ou desmarque essa opção.');
+  }
+  if (valorOutro) selecoes.push(valorOutro);
+  return selecoes;
+}
+
 if (tipoSelect) {
   tipoSelect.addEventListener('change', atualizarVisibilidadePreco);
   atualizarVisibilidadePreco();
 }
 
 tamanhoLivroSelect.addEventListener('change', aplicarTamanhoLivro);
+idiomaSelect.addEventListener('change', () => {
+  idiomaOutroInput.hidden = idiomaSelect.value !== 'outro';
+  idiomaOutroInput.required = idiomaSelect.value === 'outro';
+  if (idiomaSelect.value !== 'outro') idiomaOutroInput.value = '';
+});
+configurarCampoOutro('generos', generoOutroInput);
+configurarCampoOutro('trocasInteresses', interesseOutroInput);
 
 if (form) {
   const submitBtn = form.querySelector('button[type="submit"]');
@@ -84,18 +162,32 @@ if (form) {
       return;
     }
 
+    let generos;
+    let interessesTroca;
+    try {
+      if (idiomaSelect.value === 'outro' && !idiomaOutroInput.value.trim()) {
+        idiomaOutroInput.focus();
+        throw new Error('Informe o idioma do livro.');
+      }
+      generos = obterSelecoesComOutro('generos', generoOutroInput);
+      interessesTroca = obterSelecoesComOutro('trocasInteresses', interesseOutroInput);
+    } catch (erro) {
+      alert(erro.message);
+      return;
+    }
+
     const data = {
       titulo: form.titulo.value.trim(),
       autor: form.autor.value.trim(),
       descricao: form.descricao.value.trim(),
       editora: form.editora.value.trim(),
       anoPublicacao: Number(form.anoPublicacao.value) || null,
-      generos: form.generos.value.split(',').map(item => item.trim()).filter(Boolean),
-      idioma: form.idioma.value.trim(),
+      generos,
+      idioma: idiomaSelect.value === 'outro' ? idiomaOutroInput.value.trim() : idiomaSelect.value,
       condicao: form.condicao.value,
       tipo: form.tipo.value,
       trocas: {
-        interesses: form.trocasInteresses.value.split(',').map(item => item.trim()).filter(Boolean),
+        interesses: interessesTroca,
         aceitaRetirada: form.aceitaRetirada.checked
       },
       fotos,

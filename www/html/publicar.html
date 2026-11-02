@@ -51,7 +51,13 @@
 
           <div class="form-group">
             <label for="idioma">Idioma</label>
-            <input id="idioma" name="idioma" type="text" placeholder="Português">
+            <select id="idioma" name="idioma">
+              <option value="Português" selected>Português</option>
+              <option value="Inglês">Inglês</option>
+              <option value="Espanhol">Espanhol</option>
+              <option value="outro">Outro</option>
+            </select>
+            <input id="idiomaOutro" name="idiomaOutro" type="text" placeholder="Digite o idioma" hidden>
           </div>
 
           <div class="form-group">
@@ -114,15 +120,37 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="generos">Gêneros</label>
-            <input id="generos" name="generos" type="text" placeholder="Romance, Fantasia">
-            <span class="small-text">Separe por vírgulas.</span>
-          </div>
+          <fieldset class="form-group selection-group">
+            <legend>Gêneros do livro</legend>
+            <div class="checkbox-grid">
+              <label><input type="checkbox" name="generos" value="Romance"> Romance</label>
+              <label><input type="checkbox" name="generos" value="Fantasia"> Fantasia</label>
+              <label><input type="checkbox" name="generos" value="Ficção científica"> Ficção científica</label>
+              <label><input type="checkbox" name="generos" value="Aventura"> Aventura</label>
+              <label><input type="checkbox" name="generos" value="Mistério"> Mistério</label>
+              <label><input type="checkbox" name="generos" value="Suspense"> Suspense</label>
+              <label><input type="checkbox" name="generos" value="Terror"> Terror</label>
+              <label><input type="checkbox" name="generos" value="Drama"> Drama</label>
+              <label><input type="checkbox" name="generos" value="Biografia"> Biografia</label>
+              <label><input type="checkbox" name="generos" value="História"> História</label>
+              <label><input type="checkbox" name="generos" value="Autoajuda"> Autoajuda</label>
+              <label><input type="checkbox" name="generos" value="Infantil"> Infantil</label>
+              <label><input type="checkbox" name="generos" value="Juvenil"> Juvenil</label>
+              <label><input type="checkbox" name="generos" value="Poesia"> Poesia</label>
+              <label><input type="checkbox" name="generos" value="Religião"> Religião</label>
+              <label><input type="checkbox" name="generos" value="Negócios"> Negócios</label>
+              <label><input type="checkbox" name="generos" value="Educação"> Educação</label>
+              <label><input type="checkbox" name="generos" value="Quadrinhos e mangá"> Quadrinhos e mangá</label>
+              <label><input type="checkbox" name="generos" value="Tecnologia"> Tecnologia</label>
+              <label><input type="checkbox" name="generos" value="Outro"> Outro</label>
+            </div>
+            <input id="generoOutro" name="generoOutro" type="text" placeholder="Digite outro gênero" hidden>
+          </fieldset>
 
           <div class="form-group">
-            <label for="localizacao">Localização</label>
-            <input id="localizacao" name="localizacao" type="text" placeholder="São Paulo - SP" required>
+            <label for="localizacao">CEP de origem</label>
+            <input id="localizacao" name="localizacao" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" pattern="[0-9]{5}-?[0-9]{3}" maxlength="9" title="Informe um CEP válido com 8 números." required>
+            <span id="cepPublicacaoFeedback" class="small-text" role="status" aria-live="polite">Buscando o CEP salvo no seu cadastro...</span>
           </div>
 
           <div class="form-group" style="grid-column: 1 / -1;">
@@ -136,11 +164,33 @@
             <span class="small-text">Cole URLs http:// ou https:// separados por vírgula. Imagens que não carregarem serão substituídas por um marcador.</span>
           </div>
 
-          <div class="form-group" style="grid-column: 1 / -1;">
-            <label for="trocasInteresses">Interesses para troca</label>
-            <input id="trocasInteresses" name="trocasInteresses" type="text" placeholder="Romance, História">
-            <span class="small-text">Preencha apenas se for anúncio de troca.</span>
-          </div>
+          <fieldset class="form-group selection-group" style="grid-column: 1 / -1;">
+            <legend>Interesses para troca</legend>
+            <span class="small-text">Selecione os gêneros que tem interesse em receber.</span>
+            <div class="checkbox-grid">
+              <label><input type="checkbox" name="trocasInteresses" value="Romance"> Romance</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Fantasia"> Fantasia</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Ficção científica"> Ficção científica</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Aventura"> Aventura</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Mistério"> Mistério</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Suspense"> Suspense</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Terror"> Terror</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Drama"> Drama</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Biografia"> Biografia</label>
+              <label><input type="checkbox" name="trocasInteresses" value="História"> História</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Autoajuda"> Autoajuda</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Infantil"> Infantil</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Juvenil"> Juvenil</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Poesia"> Poesia</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Religião"> Religião</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Negócios"> Negócios</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Educação"> Educação</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Quadrinhos e mangá"> Quadrinhos e mangá</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Tecnologia"> Tecnologia</label>
+              <label><input type="checkbox" name="trocasInteresses" value="Outro"> Outro</label>
+            </div>
+            <input id="interesseOutro" name="interesseOutro" type="text" placeholder="Digite outro gênero de interesse" hidden>
+          </fieldset>
 
           <div class="form-group" style="grid-column: 1 / -1; display:flex; align-items:center; gap:12px;">
             <input id="aceitaRetirada" name="aceitaRetirada" type="checkbox">
