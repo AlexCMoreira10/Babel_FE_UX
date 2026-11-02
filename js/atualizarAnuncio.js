@@ -63,6 +63,7 @@ if (!livroId) {
 
 tipoSelect.addEventListener('change', () => {
   precoGroup.style.display = tipoSelect.value === 'venda' ? 'block' : 'none';
+  precoInput.required = tipoSelect.value === 'venda';
 });
 
 formAtualizar.addEventListener('submit', async (event) => {
@@ -77,11 +78,10 @@ formAtualizar.addEventListener('submit', async (event) => {
   }
 
   const payload = {
-    usuarioId: usuario.uid || usuario.id || null,
     titulo: tituloInput.value.trim(),
     autor: autorInput.value.trim(),
     editora: editoraInput.value.trim(),
-    anoPublicacao: anoInput.value ? Number(anoInput.value) : undefined,
+    anoPublicacao: Number(anoInput.value) || null,
     idioma: idiomaInput.value.trim(),
     condicao: condicaoSelect.value,
     tipo: tipoSelect.value,
@@ -105,13 +105,19 @@ formAtualizar.addEventListener('submit', async (event) => {
   };
 
   if (tipoSelect.value === 'venda') {
-    payload.preco = precoInput.value ? Number(precoInput.value) : 0;
+    const preco = Number(precoInput.value);
+    if (!Number.isFinite(preco) || preco <= 0) {
+      alert('Informe um preço maior que zero para anúncios de venda.');
+      precoInput.focus();
+      return;
+    }
+    payload.preco = preco;
   } else {
     delete payload.preco;
   }
 
   try {
-    const response = await fetchComFallback(`${URL_BASE}/livros/${livroId}`, {
+    const response = await fetchComFallback(`${URL_BASE}/livros/${encodeURIComponent(livroId)}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -122,14 +128,21 @@ formAtualizar.addEventListener('submit', async (event) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(errorText || 'Falha ao atualizar o anúncio.');
+      let errorMessage = errorText;
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.message || errorData.error || errorData.erro || errorData.mensagem || errorText;
+      } catch {
+        // A resposta pode conter texto simples em vez de JSON.
+      }
+      throw new Error(errorMessage || `Falha ao atualizar o anúncio (HTTP ${response.status}).`);
     }
 
     alert('Anúncio atualizado com sucesso.');
     window.location.href = './perfil.html';
   } catch (error) {
     console.error('Erro na atualização:', error);
-    alert('Não foi possível atualizar o anúncio. Tente novamente.');
+    alert(`Não foi possível atualizar o anúncio: ${error.message}`);
   }
 });
 
@@ -154,7 +167,7 @@ async function carregarLivro() {
     }
 
     const data = await response.json();
-    const livro = data.livro || data;
+    const livro = normalizeLivroData(data);
 
     tituloInput.value = livro.titulo || '';
     autorInput.value = livro.autor || '';
@@ -172,6 +185,7 @@ async function carregarLivro() {
     precoInput.value = livro.preco ?? '';
 
     precoGroup.style.display = tipoSelect.value === 'venda' ? 'block' : 'none';
+    precoInput.required = tipoSelect.value === 'venda';
     formAtualizar.style.display = 'grid';
     updateMessage.style.display = 'none';
   } catch (error) {
