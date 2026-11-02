@@ -1356,6 +1356,93 @@ ion-content {
   color: var(--accent);
 }
 
+.frete-section {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #f8fbfb;
+}
+
+.frete-section h2 {
+  color: var(--text);
+  font-size: 20px;
+}
+
+.frete-section > p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.frete-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px 14px;
+}
+
+.frete-form label {
+  grid-column: 1 / -1;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.frete-form input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: white;
+  color: var(--text);
+  font: inherit;
+}
+
+.frete-form button {
+  min-height: 46px;
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 18px;
+  background: var(--primary);
+  color: white;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.frete-form button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.frete-resultados {
+  display: grid;
+  gap: 10px;
+}
+
+.frete-opcao {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: white;
+}
+
+.frete-opcao strong {
+  color: var(--text);
+}
+
+.frete-opcao span:last-child {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
 .usuario-card {
   display: flex;
   align-items: center;
@@ -1482,6 +1569,10 @@ ion-content {
 
   .detalhes-info h1 {
     font-size: 24px;
+  }
+
+  .frete-form {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -40,6 +40,14 @@ const contactTextarea = document.getElementById('contactMessage');
 const sendContactBtn = document.getElementById('sendContactBtn');
 const cancelContactBtn = document.getElementById('cancelContactBtn');
 const contactFeedback = document.getElementById('contactFeedback');
+const freteSection = document.getElementById('freteSection');
+const freteForm = document.getElementById('freteForm');
+const cepDestinoInput = document.getElementById('cepDestino');
+const calcularFreteBtn = document.getElementById('calcularFreteBtn');
+const freteFeedback = document.getElementById('freteFeedback');
+const freteResultados = document.getElementById('freteResultados');
+const conectarMelhorEnvio = document.getElementById('conectarMelhorEnvio');
+const conectarMelhorEnvioBtn = document.getElementById('conectarMelhorEnvioBtn');
 let galeriaImagens = [];
 let galeriaIndex = 0;
 let contatoDestinatarioId = null;
@@ -230,8 +238,11 @@ function renderizarDetalhes(livro) {
   if (livro.tipo === 'venda' && livro.preco) {
     document.getElementById('precoInfo').style.display = 'block';
     document.getElementById('preco').textContent = `R$ ${livro.preco.toFixed(2).replace('.', ',')}`;
+    if (freteSection) freteSection.hidden = false;
+    atualizarConexaoMelhorEnvio(livro);
   } else {
     document.getElementById('precoInfo').style.display = 'none';
+    if (freteSection) freteSection.hidden = true;
   }
 
   // Localização
@@ -284,6 +295,119 @@ function renderizarDetalhes(livro) {
   // Mostrar conteúdo, esconder carregamento
   carregandoDetalhes.style.display = 'none';
   conteudoDetalhes.style.display = 'block';
+}
+
+async function atualizarConexaoMelhorEnvio(livro) {
+  let usuarioAtual;
+  try {
+    usuarioAtual = JSON.parse(localStorage.getItem('usuario') || 'null');
+  } catch (error) {
+    console.error('Não foi possível ler o usuário atual:', error);
+    return;
+  }
+
+  const uidAtual = usuarioAtual?.uid || usuarioAtual?._id || usuarioAtual?.id;
+  const uidVendedor = livro.usuarioId || livro.usuario?.uid || livro.usuario?._id || livro.usuario?.id;
+  if (!uidAtual || uidAtual !== uidVendedor || !conectarMelhorEnvio || !token) return;
+
+  try {
+    const resposta = await fetchComFallback(`${URL_BASE}/melhor-envio/status`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const dados = await resposta.json().catch(() => null);
+    if (!resposta.ok) {
+      throw new Error(dados?.erro || `Não foi possível consultar a conexão (HTTP ${resposta.status}).`);
+    }
+    conectarMelhorEnvio.hidden = Boolean(dados?.conectado);
+  } catch (erro) {
+    console.error('Erro ao consultar conexão do Melhor Envio:', erro);
+    if (freteFeedback) freteFeedback.textContent = erro.message;
+  }
+}
+
+if (conectarMelhorEnvioBtn) {
+  conectarMelhorEnvioBtn.addEventListener('click', async () => {
+    conectarMelhorEnvioBtn.disabled = true;
+    conectarMelhorEnvioBtn.textContent = 'Conectando...';
+    try {
+      const resposta = await fetchComFallback(`${URL_BASE}/melhor-envio/authorize`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const dados = await resposta.json().catch(() => null);
+      if (!resposta.ok || !dados?.url) {
+        throw new Error(dados?.erro || `Não foi possível iniciar a autorização (HTTP ${resposta.status}).`);
+      }
+      window.location.assign(dados.url);
+    } catch (erro) {
+      console.error('Erro ao iniciar autorização do Melhor Envio:', erro);
+      if (freteFeedback) freteFeedback.textContent = erro.message;
+      conectarMelhorEnvioBtn.disabled = false;
+      conectarMelhorEnvioBtn.textContent = 'Conectar Melhor Envio';
+    }
+  });
+}
+
+if (freteForm) {
+  freteForm.addEventListener('submit', async evento => {
+    evento.preventDefault();
+    const cepDestino = cepDestinoInput.value.replace(/\D/g, '');
+    if (!/^\d{8}$/.test(cepDestino)) {
+      freteFeedback.textContent = 'Informe um CEP de entrega válido com 8 números.';
+      cepDestinoInput.focus();
+      return;
+    }
+
+    calcularFreteBtn.disabled = true;
+    calcularFreteBtn.textContent = 'Calculando...';
+    freteFeedback.textContent = 'Consultando opções pelo Melhor Envio...';
+    freteResultados.replaceChildren();
+
+    try {
+      const resposta = await fetchComFallback(`${URL_BASE}/livros/${encodeURIComponent(livroId)}/frete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ cepDestino })
+      });
+      const dados = await resposta.json().catch(() => null);
+      if (!resposta.ok) {
+        throw new Error(dados?.erro || dados?.message || `Não foi possível calcular o frete (HTTP ${resposta.status}).`);
+      }
+
+      const cotacoes = Array.isArray(dados?.cotacoes) ? dados.cotacoes : [];
+      if (!cotacoes.length) {
+        freteFeedback.textContent = 'O Melhor Envio não retornou opções para estes CEPs e dimensões.';
+        return;
+      }
+
+      freteFeedback.textContent = `Estimativa para entrega no CEP ${cepDestino.slice(0, 5)}-${cepDestino.slice(5)}:`;
+      cotacoes.forEach(cotacao => {
+        const cartao = document.createElement('article');
+        cartao.className = 'frete-opcao';
+        const nome = document.createElement('strong');
+        nome.textContent = cotacao.nomeServico || `Serviço ${cotacao.codigoServico || ''}`.trim();
+        const preco = document.createElement('span');
+        preco.textContent = Number.isFinite(Number(cotacao.valor))
+          ? Number(cotacao.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+          : 'Valor indisponível';
+        const prazo = document.createElement('span');
+        prazo.textContent = Number.isFinite(Number(cotacao.prazoEntrega))
+          ? `Prazo estimado: ${cotacao.prazoEntrega} dia(s) útil(eis)`
+          : 'Prazo não informado';
+        cartao.append(nome, preco, prazo);
+        freteResultados.append(cartao);
+      });
+    } catch (erro) {
+      console.error('Erro ao calcular frete:', erro);
+      freteFeedback.textContent = erro.message;
+    } finally {
+      calcularFreteBtn.disabled = false;
+      calcularFreteBtn.textContent = 'Calcular frete';
+    }
+  });
 }
 
 function openGallery(startIndex = 0) {
