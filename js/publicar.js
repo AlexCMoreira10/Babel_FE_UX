@@ -4,6 +4,12 @@ import { validarListaUrlsImagem } from './image-utils.js';
 const form = document.getElementById('formPublicar');
 const tipoSelect = document.getElementById('tipo');
 const precoGroup = document.getElementById('precoGroup');
+const dimensoesEnvioGroup = document.getElementById('dimensoesEnvioGroup');
+const tamanhoLivroSelect = document.getElementById('tamanhoLivro');
+const alturaPacoteInput = document.getElementById('alturaPacote');
+const larguraPacoteInput = document.getElementById('larguraPacote');
+const comprimentoPacoteInput = document.getElementById('comprimentoPacote');
+const pesoPacoteInput = document.getElementById('pesoPacote');
 
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
@@ -28,11 +34,24 @@ async function fetchComFallback(url, options = {}) {
 function atualizarVisibilidadePreco() {
   const tipo = tipoSelect.value;
   precoGroup.style.display = tipo === 'venda' ? 'grid' : 'none';
+  dimensoesEnvioGroup.style.display = tipo === 'venda' ? 'grid' : 'none';
+  [alturaPacoteInput, larguraPacoteInput, comprimentoPacoteInput, pesoPacoteInput]
+    .forEach(input => { input.required = tipo === 'venda'; });
+}
+
+function aplicarTamanhoLivro() {
+  const [largura, comprimento] = tamanhoLivroSelect.value.split('x').map(Number);
+  if (!largura || !comprimento) return;
+  larguraPacoteInput.value = largura;
+  comprimentoPacoteInput.value = comprimento;
 }
 
 if (tipoSelect) {
   tipoSelect.addEventListener('change', atualizarVisibilidadePreco);
+  atualizarVisibilidadePreco();
 }
+
+tamanhoLivroSelect.addEventListener('change', aplicarTamanhoLivro);
 
 if (form) {
   const submitBtn = form.querySelector('button[type="submit"]');
@@ -84,7 +103,24 @@ if (form) {
     };
 
     if (form.tipo.value === 'venda') {
+      const medidas = [
+        Number(alturaPacoteInput.value),
+        Number(larguraPacoteInput.value),
+        Number(comprimentoPacoteInput.value),
+        Number(pesoPacoteInput.value)
+      ];
+      if (medidas.some(valor => !Number.isFinite(valor) || valor <= 0)) {
+        alert('Informe altura, largura, comprimento e peso maiores que zero.');
+        return;
+      }
+
       data.preco = Number(form.preco.value);
+      data.dimensoes = {
+        altura: medidas[0],
+        largura: medidas[1],
+        comprimento: medidas[2],
+        peso: medidas[3]
+      };
     }
 
     // disable submit

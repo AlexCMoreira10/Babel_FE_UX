@@ -81,6 +81,39 @@
             <span class="small-text">Preencha apenas para anúncios de venda.</span>
           </div>
 
+          <div id="dimensoesEnvioGroup" class="form-group" style="grid-column: 1 / -1; display:none;">
+            <label for="tamanhoLivro">Tamanho aproximado do livro</label>
+            <select id="tamanhoLivro" name="tamanhoLivro">
+              <option value="11x18">Livro de bolso — 11 x 18 cm</option>
+              <option value="12x18">Livro de bolso — 12 x 18 cm</option>
+              <option value="14x21" selected>Tamanho padrão — 14 x 21 cm</option>
+              <option value="16x23">Tamanho médio/grande — 16 x 23 cm</option>
+              <option value="21x28">Universitário/técnico — 21 x 28 cm</option>
+              <option value="20x20">Quadrado — 20 x 20 cm</option>
+              <option value="outros">Outros — informar medidas</option>
+            </select>
+            <span class="small-text">As medidas são usadas para estimar o frete. Informe o livro já embalado sempre que possível.</span>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="alturaPacote">Altura/espessura do pacote (cm)</label>
+                <input id="alturaPacote" name="alturaPacote" type="number" min="0.1" step="0.1" value="4" required>
+              </div>
+              <div class="form-group">
+                <label for="larguraPacote">Largura (cm)</label>
+                <input id="larguraPacote" name="larguraPacote" type="number" min="0.1" step="0.1" value="14" required>
+              </div>
+              <div class="form-group">
+                <label for="comprimentoPacote">Comprimento (cm)</label>
+                <input id="comprimentoPacote" name="comprimentoPacote" type="number" min="0.1" step="0.1" value="21" required>
+              </div>
+              <div class="form-group">
+                <label for="pesoPacote">Peso do pacote (g)</label>
+                <input id="pesoPacote" name="pesoPacote" type="number" min="1" step="1" value="450" required>
+              </div>
+            </div>
+          </div>
+
           <div class="form-group">
             <label for="generos">Gêneros</label>
             <input id="generos" name="generos" type="text" placeholder="Romance, Fantasia">
