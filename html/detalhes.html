@@ -21,6 +21,14 @@
       <a href="../index.html" class="btn-secondary">Voltar</a>
     </header>
 
+    <section id="conectarMelhorEnvio" class="melhor-envio-painel" hidden>
+      <div>
+        <strong>Frete da plataforma</strong>
+        <p id="melhorEnvioStatus">Conecte a conta da plataforma ao Melhor Envio para habilitar as cotações.</p>
+      </div>
+      <button id="conectarMelhorEnvioBtn" type="button" class="btn-primary">Conectar Melhor Envio</button>
+    </section>
+
     <main>
       <section class="detalhes-livro">
         <div class="detalhes-container">
@@ -79,14 +87,11 @@
               <section id="freteSection" class="info-item full frete-section" hidden>
                 <h2>Calcular frete</h2>
                 <p>Informe o CEP de entrega para consultar as opções de envio pelo Melhor Envio.</p>
-                <div id="conectarMelhorEnvio" hidden>
-                  <p>Conecte sua conta do Melhor Envio para disponibilizar cotações nos seus livros à venda.</p>
-                  <button id="conectarMelhorEnvioBtn" type="button" class="btn-secondary">Conectar Melhor Envio</button>
-                </div>
+                <p id="melhorEnvioIndisponivel" class="small-text" hidden>A cotação de frete ainda não está configurada pela plataforma.</p>
                 <form id="freteForm" class="frete-form">
                   <label for="cepDestino">CEP de entrega</label>
                   <input id="cepDestino" name="cepDestino" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" pattern="[0-9]{5}-?[0-9]{3}" maxlength="9" title="Informe um CEP válido com 8 números." required>
-                  <button id="calcularFreteBtn" type="submit" class="btn-primary">Calcular frete</button>
+                  <button id="calcularFreteBtn" type="submit" class="btn-primary">Consultar frete</button>
                 </form>
                 <p id="freteFeedback" role="status" aria-live="polite"></p>
                 <div id="freteResultados" class="frete-resultados" aria-live="polite"></div>

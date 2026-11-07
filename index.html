@@ -43,6 +43,7 @@
     </header>
 
     <main>
+      <p id="melhorEnvioRetorno" role="status" aria-live="polite" hidden style="margin:16px; padding:14px; border-radius:12px; background:#f8fbfb;"></p>
       <section class="hero" id="explorar">
         <div class="hero-content">
           <span class="badge">Livro, troca, doação e venda</span>
@@ -165,6 +166,22 @@
 
 <script type="module">
 import { resolverUrlImagem } from './js/image-utils.js';
+
+const parametrosRetorno = new URLSearchParams(window.location.search);
+const resultadoMelhorEnvio = parametrosRetorno.get('melhorEnvio');
+const avisoMelhorEnvio = document.getElementById('melhorEnvioRetorno');
+if (resultadoMelhorEnvio && avisoMelhorEnvio) {
+  const mensagens = {
+    sucesso: 'Conta do Melhor Envio conectada com sucesso. As cotações estão habilitadas.',
+    recusado: 'A autorização do Melhor Envio foi recusada. Você pode tentar novamente.',
+    erro: 'Não foi possível concluir a autorização do Melhor Envio. Tente novamente.'
+  };
+  avisoMelhorEnvio.textContent = mensagens[resultadoMelhorEnvio] || mensagens.erro;
+  avisoMelhorEnvio.hidden = false;
+  const urlLimpa = new URL(window.location.href);
+  urlLimpa.searchParams.delete('melhorEnvio');
+  window.history.replaceState(null, '', `${urlLimpa.pathname}${urlLimpa.search}${urlLimpa.hash}`);
+}
 
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';

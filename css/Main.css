@@ -1356,6 +1356,24 @@ ion-content {
   color: var(--accent);
 }
 
+.melhor-envio-painel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 18px auto;
+  padding: 16px 20px;
+  max-width: 1200px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #f8fbfb;
+}
+
+.melhor-envio-painel p {
+  margin: 5px 0 0;
+  color: var(--muted);
+}
+
 .frete-section {
   padding: 18px;
   border: 1px solid var(--border);
@@ -1441,6 +1459,14 @@ ion-content {
 
 [hidden] {
   display: none !important;
+}
+
+@media (max-width: 520px) {
+  .melhor-envio-painel {
+    align-items: stretch;
+    flex-direction: column;
+    margin: 14px;
+  }
 }
 
 .usuario-card {

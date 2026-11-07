@@ -3,18 +3,30 @@ import { normalizarUrlImagem, resolverUrlImagem } from './image-utils.js';
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
 
-let URL_BASE = URL_BASE_LOCAL;
+let URL_BASE = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
+  ? URL_BASE_LOCAL
+  : URL_BASE_REMOTE;
 
 async function fetchComFallback(url, options = {}) {
+  const fetchComTimeout = async (urlRequisicao) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    try {
+      return await fetch(urlRequisicao, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
   try {
-    const response = await fetch(url, options);
+    const response = await fetchComTimeout(url);
     return response;
   } catch (erro) {
     if (URL_BASE === URL_BASE_LOCAL && url.includes(URL_BASE_LOCAL)) {
       console.warn(`Falha ao conectar em ${URL_BASE_LOCAL}, tentando ${URL_BASE_REMOTE}...`);
       URL_BASE = URL_BASE_REMOTE;
       const urlRemota = url.replace(URL_BASE_LOCAL, URL_BASE_REMOTE);
-      return fetch(urlRemota, options);
+      return fetchComTimeout(urlRemota);
     }
     throw erro;
   }
@@ -48,11 +60,14 @@ const freteFeedback = document.getElementById('freteFeedback');
 const freteResultados = document.getElementById('freteResultados');
 const conectarMelhorEnvio = document.getElementById('conectarMelhorEnvio');
 const conectarMelhorEnvioBtn = document.getElementById('conectarMelhorEnvioBtn');
+const melhorEnvioStatus = document.getElementById('melhorEnvioStatus');
+const melhorEnvioIndisponivel = document.getElementById('melhorEnvioIndisponivel');
 let galeriaImagens = [];
 let galeriaIndex = 0;
 let contatoDestinatarioId = null;
 let contatoDestinatarioNome = null;
 let contatoLivroId = null;
+let solicitacaoFreteEmAndamento = false;
 
 function extrairUrlImagem(valor) {
   if (!valor) return '';
@@ -239,7 +254,6 @@ function renderizarDetalhes(livro) {
     document.getElementById('precoInfo').style.display = 'block';
     document.getElementById('preco').textContent = `R$ ${livro.preco.toFixed(2).replace('.', ',')}`;
     if (freteSection) freteSection.hidden = false;
-    atualizarConexaoMelhorEnvio(livro);
   } else {
     document.getElementById('precoInfo').style.display = 'none';
     if (freteSection) freteSection.hidden = true;
@@ -297,18 +311,16 @@ function renderizarDetalhes(livro) {
   conteudoDetalhes.style.display = 'block';
 }
 
-async function atualizarConexaoMelhorEnvio(livro) {
-  let usuarioAtual;
-  try {
-    usuarioAtual = JSON.parse(localStorage.getItem('usuario') || 'null');
-  } catch (error) {
-    console.error('Não foi possível ler o usuário atual:', error);
+async function atualizarConexaoMelhorEnvio() {
+  if (!conectarMelhorEnvio || !conectarMelhorEnvioBtn) return;
+  conectarMelhorEnvio.hidden = false;
+  conectarMelhorEnvioBtn.disabled = !token;
+  if (!token) {
+    if (melhorEnvioStatus) {
+      melhorEnvioStatus.textContent = 'Entre na sua conta da Estante para conectar o Melhor Envio.';
+    }
     return;
   }
-
-  const uidAtual = usuarioAtual?.uid || usuarioAtual?._id || usuarioAtual?.id;
-  const uidVendedor = livro.usuarioId || livro.usuario?.uid || livro.usuario?._id || livro.usuario?.id;
-  if (!uidAtual || uidAtual !== uidVendedor || !conectarMelhorEnvio || !token) return;
 
   try {
     const resposta = await fetchComFallback(`${URL_BASE}/melhor-envio/status`, {
@@ -318,10 +330,32 @@ async function atualizarConexaoMelhorEnvio(livro) {
     if (!resposta.ok) {
       throw new Error(dados?.erro || `Não foi possível consultar a conexão (HTTP ${resposta.status}).`);
     }
-    conectarMelhorEnvio.hidden = Boolean(dados?.conectado);
+    const conectado = Boolean(dados?.conectado);
+    const podeAutorizar = Boolean(dados?.podeAutorizar);
+    conectarMelhorEnvio.hidden = conectado && !podeAutorizar;
+    conectarMelhorEnvioBtn.disabled = !podeAutorizar;
+    conectarMelhorEnvioBtn.textContent = conectado
+      ? 'Refazer autorização do Melhor Envio'
+      : 'Conectar Melhor Envio';
+    if (melhorEnvioStatus) {
+      if (!dados?.responsavelConfigurado) {
+        melhorEnvioStatus.textContent = 'Configure MELHOR_ENVIO_OWNER_UID no backend para habilitar a conexão.';
+      } else if (conectado && podeAutorizar) {
+        melhorEnvioStatus.textContent = 'A conta compartilhada está conectada. Você pode refazer a autorização se necessário.';
+      } else if (!podeAutorizar) {
+        melhorEnvioStatus.textContent = 'Esta conta da Estante não está autorizada a conectar o Melhor Envio.';
+      } else {
+        melhorEnvioStatus.textContent = 'Conecte a conta de frete da plataforma ao Melhor Envio para habilitar as cotações.';
+      }
+    }
+    if (melhorEnvioIndisponivel) {
+      melhorEnvioIndisponivel.hidden = conectado;
+    }
   } catch (erro) {
     console.error('Erro ao consultar conexão do Melhor Envio:', erro);
-    if (freteFeedback) freteFeedback.textContent = erro.message;
+    conectarMelhorEnvio.hidden = false;
+    conectarMelhorEnvioBtn.disabled = false;
+    if (melhorEnvioStatus) melhorEnvioStatus.textContent = erro.message;
   }
 }
 
@@ -351,6 +385,7 @@ if (conectarMelhorEnvioBtn) {
 if (freteForm) {
   freteForm.addEventListener('submit', async evento => {
     evento.preventDefault();
+    if (solicitacaoFreteEmAndamento) return;
     const cepDestino = cepDestinoInput.value.replace(/\D/g, '');
     if (!/^\d{8}$/.test(cepDestino)) {
       freteFeedback.textContent = 'Informe um CEP de entrega válido com 8 números.';
@@ -358,19 +393,19 @@ if (freteForm) {
       return;
     }
 
+    solicitacaoFreteEmAndamento = true;
     calcularFreteBtn.disabled = true;
-    calcularFreteBtn.textContent = 'Calculando...';
+    calcularFreteBtn.textContent = 'Consultando...';
     freteFeedback.textContent = 'Consultando opções pelo Melhor Envio...';
     freteResultados.replaceChildren();
 
     try {
-      const resposta = await fetchComFallback(`${URL_BASE}/livros/${encodeURIComponent(livroId)}/frete`, {
+      const resposta = await fetchComFallback(`${URL_BASE}/melhor-envio/cotacao`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ cepDestino })
+        body: JSON.stringify({ livroId, cepDestino })
       });
       const dados = await resposta.json().catch(() => null);
       if (!resposta.ok) {
@@ -404,8 +439,9 @@ if (freteForm) {
       console.error('Erro ao calcular frete:', erro);
       freteFeedback.textContent = erro.message;
     } finally {
+      solicitacaoFreteEmAndamento = false;
       calcularFreteBtn.disabled = false;
-      calcularFreteBtn.textContent = 'Calcular frete';
+      calcularFreteBtn.textContent = 'Consultar frete';
     }
   });
 }
@@ -673,4 +709,5 @@ function bindContactEvents() {
 window.addEventListener('DOMContentLoaded', () => {
   carregarDetalhesLivro();
   bindContactEvents();
+  atualizarConexaoMelhorEnvio();
 });
