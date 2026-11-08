@@ -990,6 +990,11 @@ function extrairTokenRastreio(valor) {
 
 if (scanQrBtn) {
   scanQrBtn.addEventListener('click', async () => {
+    if (window.BABEL_TEST_MODE) {
+      scanFeedback.textContent = 'A câmera nativa não está disponível no ambiente de testes local.';
+      return;
+    }
+
     scanQrBtn.disabled = true;
     scanFeedback.textContent = 'Preparando o leitor de QR Code...';
     try {

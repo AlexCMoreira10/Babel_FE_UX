@@ -1,3 +1,94 @@
+# Frontend: fonte e build
+
+A fonte oficial do cliente fica na raiz: `index.html`, `html/`, `css/` e `js/`.
+Edite esses arquivos, não os arquivos gerados em `www/`. A mesma estrutura de
+caminhos relativos funciona quando a raiz é publicada no GitHub Pages ou
+quando `www/` é utilizada pelo Capacitor.
+
+```bash
+npm run build       # gera www/ a partir da fonte oficial
+npm run check:web   # identifica arquivos ausentes, extras ou com conteúdo diferente
+npm test            # verifica build, integridade, caminhos e sintaxe
+```
+
+O build copia apenas arquivos web permitidos de `index.html`, `html/`, `css/`
+e `js/`; diretórios de testes, dependências, arquivos ocultos, configurações e
+credenciais não são copiados. Ele falha ao encontrar arquivos inesperados em
+`www/`, sem apagá-los: revise-os e mova-os manualmente antes de repetir o
+build. Arquivos existentes em `www/` que também existem na fonte são
+sobrescritos; preserve alterações locais antes de executar o comando. As
+configurações públicas do Firebase usadas pelo navegador continuam no código
+cliente; nunca coloque chaves privadas ou credenciais de serviço nele.
+
+O Capacitor permanece configurado com `webDir: "www"`; execute o build antes
+de `npx cap sync` ou `npx cap copy`. Esses comandos não publicam o site.
+Ao servir localmente, use `localhost` ou HTTPS para testar geolocalização.
+
+## Ambiente visual local com mocks
+
+Este ambiente é isolado: usa somente dados em memória e atende apenas conexões
+loopback. Não inicia o backend, não acessa Firebase, não faz uploads e não envia
+requisições de saída. As telas CDN são removidas no modo de teste. O navegador
+recebe um bloqueador que permite `fetch` somente para a mesma origem; falhas
+não podem recorrer à API remota.
+
+Comandos exatos, a partir da raiz:
+
+```bash
+npm run build
+npm run check
+npm test
+npm run test:server
+```
+
+Deixe o servidor ativo e abra no Chrome/Chromium:
+
+`http://localhost:3000/?babelTestMode=1`
+
+Ou abra a página pelo terminal:
+
+```bash
+google-chrome --new-window 'http://localhost:3000/?babelTestMode=1'
+# Alternativa quando o executável instalado se chama chromium:
+chromium 'http://localhost:3000/?babelTestMode=1'
+```
+
+O parâmetro ativa os mocks explicitamente; o servidor escuta apenas em
+`127.0.0.1` (loopback). O modo não liga em domínios públicos e o app, no modo
+teste, permite apenas a mesma origem e o serviço loopback local. Credenciais fictícias:
+`leitor@teste.local` / `BabelTeste123!`. Para testar cadastro, use outro e-mail
+fictício. A geolocalização usa ponto simulado de São Paulo.
+
+Os registros são reinicializados ao reiniciar o servidor. Para restaurar os
+dados fictícios sem parar o servidor:
+
+```bash
+curl -X POST http://127.0.0.1:3000/__test/reset
+```
+
+Para encerrar, pressione `Ctrl+C` no terminal do `npm run test:server`.
+Depois, feche a aba de testes ou limpe o cookie e a sessão do navegador:
+
+```js
+document.cookie = 'babelTestMode=; Max-Age=0; Path=/';
+sessionStorage.removeItem('babelTestMode');
+sessionStorage.removeItem('livroSelecionado');
+sessionStorage.removeItem('livroPublicadoQr');
+localStorage.removeItem('token');
+localStorage.removeItem('usuario');
+```
+
+Não abra outras instâncias locais do app com o cookie de testes ativo. Login
+Google real, Firebase, scanner QR nativo e callbacks reais do Melhor Envio são
+deliberadamente indisponíveis. O QR e o frete apresentados são fictícios.
+Uploads são simulados em memória; nenhum arquivo é transmitido ou persistido.
+O scanner QR nativo fica desativado antes de carregar qualquer módulo nativo.
+
+Na busca normal, a opção **Autor** usa o filtro existente da API e exige o
+nome exato, inclusive maiúsculas e minúsculas. A API de proximidade aceita
+apenas título e tipo: para ativá-la, selecione **Título**. Busca parcial por
+autor combinada com proximidade depende de suporte futuro no backend.
+
 # Build para celular
 - bash 
 - npm init -y

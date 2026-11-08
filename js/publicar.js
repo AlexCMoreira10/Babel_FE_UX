@@ -1,5 +1,10 @@
 import { salvarQrLivro } from './books-api.js';
-import { validarListaUrlsImagem } from './image-utils.js';
+import {
+  aguardarUsuarioFirebase,
+  enviarImagensLivro,
+  removerUploadsDaOperacao,
+  validarArquivosImagem
+} from './firebase-storage.js';
 
 const form = document.getElementById('formPublicar');
 const tipoSelect = document.getElementById('tipo');
@@ -16,16 +21,33 @@ const alturaPacoteInput = document.getElementById('alturaPacote');
 const larguraPacoteInput = document.getElementById('larguraPacote');
 const comprimentoPacoteInput = document.getElementById('comprimentoPacote');
 const pesoPacoteInput = document.getElementById('pesoPacote');
+const fotosArquivosInput = document.getElementById('fotosArquivos');
+const fotosExternasInput = document.getElementById('fotosExternas');
+const fotosPreview = document.getElementById('fotosPreview');
 
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
 
 let URL_BASE = URL_BASE_LOCAL;
+let carregamentoPerfilPublicacao = Promise.resolve(null);
 
 function formatarCep(valor) {
   const digitos = String(valor || '').replace(/\D/g, '');
   if (digitos.length !== 8) return '';
   return `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
+}
+
+function geocodeValido(geocode) {
+  const coordenadas = geocode?.coordinates;
+  return geocode?.type === 'Point' &&
+    Array.isArray(coordenadas) &&
+    coordenadas.length === 2 &&
+    Number.isFinite(coordenadas[0]) &&
+    coordenadas[0] >= -180 &&
+    coordenadas[0] <= 180 &&
+    Number.isFinite(coordenadas[1]) &&
+    coordenadas[1] >= -90 &&
+    coordenadas[1] <= 90;
 }
 
 async function fetchComFallback(url, options = {}) {
@@ -46,8 +68,9 @@ async function fetchComFallback(url, options = {}) {
 async function preencherCepDoCadastro() {
   const token = localStorage.getItem('token');
   if (!token) {
-    cepPublicacaoFeedback.textContent = 'Entre na sua conta para preencher o CEP cadastrado.';
-    return;
+    cepPublicacaoFeedback.textContent = 'Entre na sua conta para carregar a localização do perfil.';
+    cepPublicacaoFeedback.classList.add('erro');
+    return null;
   }
 
   try {
@@ -60,20 +83,34 @@ async function preencherCepDoCadastro() {
 
     const perfil = await resposta.json();
     const cep = formatarCep(perfil.endereco?.cep);
-    if (cep) {
-      cepPublicacaoInput.value = cep;
-      cepPublicacaoFeedback.textContent = 'CEP carregado do seu cadastro. Somente o CEP será usado como localização do anúncio.';
-    } else {
-      cepPublicacaoFeedback.textContent = 'Não há um CEP válido no seu cadastro. Informe o CEP de origem do livro.';
+    cepPublicacaoInput.value = cep;
+
+    if (!cep || !geocodeValido(perfil.geocode)) {
+      cepPublicacaoFeedback.textContent = !cep
+        ? 'Cadastre um CEP no seu perfil para publicar livros.'
+        : 'Cadastre sua localização aproximada no perfil para publicar livros com busca por proximidade.';
+      cepPublicacaoFeedback.classList.add('erro');
+      return perfil;
     }
+
+    cepPublicacaoFeedback.textContent = 'CEP e localização aproximada carregados do seu perfil.';
+    cepPublicacaoFeedback.classList.remove('erro');
+    cepPublicacaoFeedback.classList.add('sucesso');
+    return perfil;
   } catch (erro) {
     console.error('Não foi possível carregar o CEP do cadastro:', erro);
-    cepPublicacaoFeedback.textContent = `${erro.message} Informe o CEP de origem manualmente.`;
+    cepPublicacaoFeedback.textContent = `${erro.message} Confira seu perfil e tente novamente.`;
+    cepPublicacaoFeedback.classList.add('erro');
+    return null;
   }
 }
 
+carregamentoPerfilPublicacao = preencherCepDoCadastro();
+
 if (cepPublicacaoInput && cepPublicacaoFeedback) {
-  preencherCepDoCadastro();
+  carregamentoPerfilPublicacao.catch(erro => {
+    console.error('Não foi possível carregar a localização do perfil:', erro);
+  });
 }
 
 function atualizarVisibilidadePreco() {
@@ -100,6 +137,48 @@ function configurarCampoOutro(nomeGrupo, campoOutro) {
   };
   checkboxOutro.addEventListener('change', atualizarCampo);
   atualizarCampo();
+}
+
+function obterUrlsExternas() {
+  return fotosExternasInput.value
+    .split(/[,\n]/)
+    .map(url => url.trim())
+    .filter(Boolean);
+}
+
+function validarUrlsExternas(urls) {
+  const invalidas = urls.filter(valor => {
+    try {
+      const url = new URL(valor);
+      return url.protocol !== 'https:' ||
+        !url.hostname ||
+        url.username ||
+        url.password ||
+        url.hostname === 'firebasestorage.googleapis.com' ||
+        url.hostname === 'storage.googleapis.com' ||
+        url.hostname.endsWith('.firebasestorage.app');
+    } catch {
+      return true;
+    }
+  });
+  return invalidas;
+}
+
+function atualizarPreviewFotos() {
+  fotosPreview.replaceChildren();
+  const arquivos = Array.from(fotosArquivosInput.files || []);
+  const urls = obterUrlsExternas();
+  const contador = document.createElement('span');
+  contador.className = 'small-text';
+  contador.textContent = `${arquivos.length + urls.length} de 5 imagens selecionadas`;
+  fotosPreview.append(contador);
+
+  for (const arquivo of arquivos) {
+    const item = document.createElement('p');
+    item.className = 'small-text';
+    item.textContent = arquivo.name;
+    fotosPreview.append(item);
+  }
 }
 
 function obterSelecoesComOutro(nomeGrupo, campoOutro) {
@@ -130,6 +209,9 @@ idiomaSelect.addEventListener('change', () => {
 });
 configurarCampoOutro('generos', generoOutroInput);
 configurarCampoOutro('trocasInteresses', interesseOutroInput);
+fotosArquivosInput.addEventListener('change', atualizarPreviewFotos);
+fotosExternasInput.addEventListener('input', atualizarPreviewFotos);
+atualizarPreviewFotos();
 
 if (form) {
   const submitBtn = form.querySelector('button[type="submit"]');
@@ -143,22 +225,42 @@ if (form) {
       window.location.href = './login.html';
       return;
     }
-
-    // basic client-side validation
-    if (form.tipo.value === '') {
+    const perfil = await carregamentoPerfilPublicacao;
+    const cepPerfil = formatarCep(perfil?.endereco?.cep);
+    if (!cepPerfil || !geocodeValido(perfil?.geocode)) {
+      cepPublicacaoFeedback.textContent = !cepPerfil
+        ? 'Cadastre um CEP no seu perfil antes de publicar.'
+        : 'Cadastre sua localização aproximada no perfil antes de publicar.';
+      cepPublicacaoFeedback.classList.add('erro');
+      cepPublicacaoInput.focus();
+      return;
+    }
+    if (!form.tipo.value) {
       alert('Selecione o tipo de anúncio.');
       return;
     }
-
     if (form.tipo.value === 'venda' && (!form.preco.value || Number(form.preco.value) <= 0)) {
       alert('Informe um preço válido para anúncios de venda.');
       return;
     }
 
-    const { urls: fotos, invalidas } = validarListaUrlsImagem(form.fotos.value);
+    const fotosExternas = obterUrlsExternas();
+    const invalidas = validarUrlsExternas(fotosExternas);
     if (invalidas.length) {
-      alert(`Confira as URLs das imagens. Use endereços válidos iniciados por http:// ou https://.\n\nInválida(s): ${invalidas.join(', ')}`);
-      form.fotos.focus();
+      alert(
+        'Confira as URLs externas. Use endereços HTTPS válidos que não sejam links do Firebase Storage.\n\n' +
+        invalidas.join(', ')
+      );
+      fotosExternasInput.focus();
+      return;
+    }
+
+    let arquivosImagem;
+    try {
+      arquivosImagem = validarArquivosImagem(fotosArquivosInput.files, fotosExternas.length);
+    } catch (erro) {
+      alert(erro.message);
+      fotosArquivosInput.focus();
       return;
     }
 
@@ -190,8 +292,7 @@ if (form) {
         interesses: interessesTroca,
         aceitaRetirada: form.aceitaRetirada.checked
       },
-      fotos,
-      localizacao: form.localizacao.value.trim()
+      localizacao: cepPerfil
     };
 
     if (form.tipo.value === 'venda') {
@@ -205,7 +306,6 @@ if (form) {
         alert('Informe altura, largura, comprimento e peso maiores que zero.');
         return;
       }
-
       data.preco = Number(form.preco.value);
       data.dimensoes = {
         altura: medidas[0],
@@ -215,32 +315,82 @@ if (form) {
       };
     }
 
-    // disable submit
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Publicando...';
+      submitBtn.textContent = 'Preparando publicação...';
     }
 
+    let idRascunho = '';
+    let arquivosEnviados = [];
+    let usuarioFirebase = null;
+    let etapa = 'rascunho';
     try {
-      const resposta = await fetchComFallback(`${URL_BASE}/livros`, {
+      usuarioFirebase = await aguardarUsuarioFirebase();
+      const respostaRascunho = await fetchComFallback(URL_BASE + '/livros/rascunhos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: 'Bearer ' + token
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify({ ...data, fotosExternas })
       });
+      const dadosRascunho = await respostaRascunho.json().catch(() => null);
+      if (!respostaRascunho.ok) {
+        throw new Error(dadosRascunho?.erro || 'Não foi possível iniciar o rascunho.');
+      }
+      idRascunho = dadosRascunho?.livroId || dadosRascunho?.id || '';
+      if (!idRascunho) throw new Error('A API não retornou o ID do rascunho.');
 
-      const body = await resposta.json().catch(() => null);
-
-      if (!resposta.ok) {
-        const msg = body?.message || body?.error || 'Erro ao publicar livro';
-        throw new Error(msg);
+      etapa = 'upload';
+      if (submitBtn) submitBtn.textContent = 'Enviando imagens...';
+      try {
+        arquivosEnviados = await enviarImagensLivro(arquivosImagem, {
+          usuario: usuarioFirebase,
+          livroId: idRascunho,
+          uploadId: idRascunho
+        });
+      } catch (erro) {
+        arquivosEnviados = erro.uploadedFiles || [];
+        throw erro;
       }
 
-      const livroCriado = body?.livro || body?.data?.livro || body?.data || body;
+      etapa = 'publicacao';
+      if (submitBtn) submitBtn.textContent = 'Publicando anúncio...';
+      const fotos = fotosExternas.concat(arquivosEnviados.map(imagem => imagem.url));
+      const respostaPublicacao = await fetchComFallback(
+        URL_BASE + '/livros/rascunhos/' + encodeURIComponent(idRascunho) + '/publicar',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token
+          },
+          body: JSON.stringify({ fotos })
+        }
+      );
+      let livroCriado = await respostaPublicacao.json().catch(() => null);
+      if (!respostaPublicacao.ok) {
+        const respostaVerificacao = await fetchComFallback(
+          URL_BASE + '/livros/' + encodeURIComponent(idRascunho),
+          { headers: { Authorization: 'Bearer ' + token } }
+        );
+        const livroVerificado = respostaVerificacao.ok
+          ? await respostaVerificacao.json().catch(() => null)
+          : null;
+        if (livroVerificado?.usuarioId === usuarioFirebase.uid &&
+            JSON.stringify(livroVerificado.fotos || []) === JSON.stringify(fotos)) {
+          livroCriado = livroVerificado;
+        } else {
+          throw new Error(
+            livroCriado?.erro ||
+            'Falha ao publicar o anúncio (HTTP ' + respostaPublicacao.status + ').'
+          );
+        }
+      }
+
       const dadosQr = {
         ...livroCriado,
+        id: livroCriado?.id || idRascunho,
         titulo: livroCriado?.titulo || data.titulo,
         qrCode: livroCriado?.qrCode || livroCriado?.qr?.qrCode || '',
         qrUrl: livroCriado?.qrUrl || livroCriado?.qr?.qrUrl || ''
@@ -249,12 +399,13 @@ if (form) {
       if (!dadosQr.qrCode && (dadosQr.id || dadosQr._id)) {
         try {
           const idLivro = encodeURIComponent(dadosQr.id || dadosQr._id);
-          const respostaQr = await fetchComFallback(`${URL_BASE}/livros/${idLivro}/qrcode`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const respostaQr = await fetchComFallback(
+            URL_BASE + '/livros/' + idLivro + '/qrcode',
+            { headers: { Authorization: 'Bearer ' + token } }
+          );
           const qrGerado = await respostaQr.json().catch(() => null);
           if (!respostaQr.ok) {
-            throw new Error(qrGerado?.erro || qrGerado?.message || `HTTP ${respostaQr.status}`);
+            throw new Error(qrGerado?.erro || qrGerado?.message || 'HTTP ' + respostaQr.status);
           }
           dadosQr.qrCode = qrGerado?.qrCode || qrGerado?.qr?.qrCode || '';
           dadosQr.qrUrl = qrGerado?.qrUrl || qrGerado?.qr?.qrUrl || dadosQr.qrUrl;
@@ -272,12 +423,44 @@ if (form) {
       if (dadosQr.qrCode && dadosQr.qrUrl) {
         alert('Livro publicado com sucesso! O QR Code ficará disponível no seu perfil.');
       } else {
-        alert(`Livro publicado com sucesso, mas não foi possível gerar o QR Code.${detalheFalhaQr ? ` API: ${detalheFalhaQr}` : ' A API não retornou os dados do QR.'} O livro já foi salvo; não é necessário publicá-lo novamente.`);
+        alert(
+          'Livro publicado com sucesso, mas não foi possível gerar o QR Code.' +
+          (detalheFalhaQr ? ' API: ' + detalheFalhaQr : ' A API não retornou os dados do QR.') +
+          ' O livro já foi salvo; não é necessário publicá-lo novamente.'
+        );
       }
       window.location.href = './perfil.html';
     } catch (error) {
       console.error('Erro ao publicar:', error);
-      alert(`Falha ao publicar: ${error.message || error}`);
+      let falhaLimpeza = '';
+      if (idRascunho) {
+        try {
+          const respostaLimpeza = await fetchComFallback(
+            URL_BASE + '/livros/rascunhos/' + encodeURIComponent(idRascunho),
+            {
+              method: 'DELETE',
+              headers: { Authorization: 'Bearer ' + token }
+            }
+          );
+          if (!respostaLimpeza.ok && respostaLimpeza.status !== 404) {
+            const retornoLimpeza = await respostaLimpeza.json().catch(() => null);
+            throw new Error(retornoLimpeza?.erro || 'HTTP ' + respostaLimpeza.status);
+          }
+        } catch (erroLimpeza) {
+          console.error('A API não conseguiu descartar o rascunho:', erroLimpeza);
+          falhaLimpeza = ' A limpeza dos arquivos será repetida pela tarefa automática.';
+        }
+
+        if (etapa !== 'publicacao' && usuarioFirebase) {
+          try {
+            await removerUploadsDaOperacao(arquivosEnviados, usuarioFirebase.uid);
+          } catch (erroLimpeza) {
+            console.error('Não foi possível remover todos os uploads temporários:', erroLimpeza);
+            falhaLimpeza = ' Alguns uploads pendentes serão removidos pela tarefa automática.';
+          }
+        }
+      }
+      alert('Falha ao publicar: ' + (error.message || error) + '.' + falhaLimpeza);
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;

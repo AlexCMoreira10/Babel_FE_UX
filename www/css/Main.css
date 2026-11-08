@@ -831,6 +831,16 @@ ion-content {
   color: var(--text);
 }
 
+.campo-busca select {
+  max-width: 150px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: white;
+  color: var(--text);
+  font: inherit;
+}
+
 .filtros {
   display: flex;
   flex-wrap: wrap;
@@ -904,6 +914,12 @@ ion-content {
 
 #proximidadeFeedback.erro {
   color: #b42318;
+}
+
+.proximidade-controles p:not(#proximidadeFeedback) {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .resultado-head {

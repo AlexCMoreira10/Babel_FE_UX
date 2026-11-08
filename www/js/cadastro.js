@@ -1,9 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getAuth,
-  signInWithEmailAndPassword
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
+const testMode = window.BABEL_TEST_MODE === true;
 const firebaseConfig = {
   apiKey: "AIzaSyA1GzaVBqE6BQ8QALyv6oD2uqFlUuk0S54",
   authDomain: "babel-5dcbd.firebaseapp.com",
@@ -18,7 +13,15 @@ const URL_BASE_REMOTE = "https://babel-be-lovat.vercel.app/api";
 const URL_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
   ? URL_BASE_LOCAL
   : URL_BASE_REMOTE;
-const auth = getAuth(initializeApp(firebaseConfig));
+let auth;
+let signInWithEmailAndPassword;
+const firebaseReady = testMode ? Promise.resolve() : Promise.all([
+  import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"),
+  import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js")
+]).then(([appModule, authModule]) => {
+  auth = authModule.getAuth(appModule.initializeApp(firebaseConfig));
+  ({ signInWithEmailAndPassword } = authModule);
+});
 const cadastroForm = document.getElementById("cadastroForm");
 const cadastroBtn = document.getElementById("cadastroBtn");
 const cadastroFeedback = document.getElementById("cadastroFeedback");
@@ -72,7 +75,10 @@ async function consultarCep() {
 
   cepConsultaPromise = (async () => {
     try {
-      const resposta = await fetch(`https://viacep.com.br/ws/${cep}/json/`, {
+      const urlCep = testMode
+        ? `/__test/viacep/${cep}`
+        : `https://viacep.com.br/ws/${cep}/json/`;
+      const resposta = await fetch(urlCep, {
         signal: controller.signal
       });
       if (!resposta.ok) {
@@ -197,6 +203,7 @@ async function enviarCadastro(dados) {
   try {
     resposta = await fetch(`${URL_BASE}/usuarios/cadastro`, opcoes);
   } catch (erro) {
+    if (testMode) throw erro;
     if (URL_BASE !== URL_BASE_LOCAL) throw erro;
     console.warn(`Falha ao conectar em ${URL_BASE_LOCAL}, tentando ${URL_BASE_REMOTE}...`);
     resposta = await fetch(`${URL_BASE_REMOTE}/usuarios/cadastro`, opcoes);
@@ -360,10 +367,18 @@ cadastroForm.addEventListener("submit", async evento => {
   mostrarFeedback("Estamos criando sua conta...");
 
   try {
-    const perfil = await enviarCadastro(dados);
+    const perfil = testMode
+      ? await window.BabelTestAuth.register(dados)
+      : await enviarCadastro(dados);
     try {
-      const resultadoLogin = await signInWithEmailAndPassword(auth, dados.email, dados.senha);
-      await salvarSessao(resultadoLogin.user, perfil, dados.nome);
+      let usuario;
+      if (testMode) {
+        usuario = await window.BabelTestAuth.login(dados.email, dados.senha);
+      } else {
+        await firebaseReady;
+        usuario = (await signInWithEmailAndPassword(auth, dados.email, dados.senha)).user;
+      }
+      await salvarSessao(usuario, perfil, dados.nome);
       mostrarFeedback("Conta criada! Redirecionando para sua estante...", "sucesso");
       window.setTimeout(() => window.location.replace("../index.html"), 700);
     } catch (erroLogin) {

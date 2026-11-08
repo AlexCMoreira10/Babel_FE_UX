@@ -1,4 +1,9 @@
 import { normalizarUrlImagem, resolverUrlImagem } from './image-utils.js';
+import {
+  buscarLivroNoCatalogo,
+  buscarRecomendacoesPorGenero,
+  carregarDetalheComFallback
+} from './detalhes-catalogo.mjs';
 
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
@@ -109,6 +114,18 @@ function mostrarCarregando() {
   erroDetalhes.style.display = 'none';
 }
 
+async function listarPaginaPublica(page, limit) {
+  const url = new URL(`${URL_BASE}/livros`);
+  url.searchParams.set('page', page);
+  url.searchParams.set('limit', limit);
+  const resposta = await fetchComFallback(url.toString());
+  if (!resposta.ok) {
+    const textoErro = await resposta.text();
+    throw new Error(`Não foi possível consultar o catálogo público (HTTP ${resposta.status}): ${textoErro}`);
+  }
+  return resposta.json();
+}
+
 async function carregarDetalhesLivro() {
   mostrarCarregando();
 
@@ -121,62 +138,44 @@ async function carregarDetalhesLivro() {
   console.log('Carregando detalhes do livro com ID:', livroId);
 
   try {
-    const headers = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const url = `${URL_BASE}/livros/${livroId}`;
-    console.log('URL da requisição:', url);
-    console.log('Headers:', headers);
-
-    const resposta = await fetchComFallback(url, {
-      headers: headers
+    const livro = await carregarDetalheComFallback({
+      token,
+      carregarAutenticado: async () => {
+        const resposta = await fetchComFallback(`${URL_BASE}/livros/${encodeURIComponent(livroId)}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!resposta.ok) {
+          const textoErro = await resposta.text();
+          throw new Error(`Status ${resposta.status}: ${textoErro}`);
+        }
+        return resposta.json();
+      },
+      carregarPublico: () => buscarLivroNoCatalogo(livroId, listarPaginaPublica),
+      carregarBackup: carregarDetalhesBackup
     });
 
-    console.log('Status da resposta:', resposta.status);
-    console.log('Headers da resposta:', resposta.headers);
-
-    if (!resposta.ok) {
-      const textoErro = await resposta.text();
-      console.error('Erro na resposta:', textoErro);
-      throw new Error(`Status ${resposta.status}: ${textoErro}`);
-    }
-
-    const livro = await resposta.json();
     console.log('Livro carregado:', livro);
-
     renderizarDetalhes(livro);
     carregarRecomendacoes(livro.generos?.[0] || livro.genero);
   } catch (erro) {
     console.error('Erro ao carregar detalhes:', erro);
-    if (carregarDetalhesBackup()) {
-      return;
-    }
     mostrarErro();
   }
 }
 
 function carregarDetalhesBackup() {
   const saved = sessionStorage.getItem('livroSelecionado');
-  if (!saved) {
-    return false;
-  }
+  if (!saved) return null;
 
   try {
     const livro = JSON.parse(saved);
     const livroIdSalvo = livro._id || livro.id;
-    if (!livroIdSalvo || livroIdSalvo !== livroId) {
-      return false;
-    }
-
+    if (!livroIdSalvo || livroIdSalvo !== livroId) return null;
     console.log('Carregando detalhes do livro a partir do backup de sessão:', livro);
-    renderizarDetalhes(livro);
-    carregarRecomendacoes(livro.generos?.[0] || livro.genero);
-    return true;
+    return livro;
   } catch (erro) {
     console.warn('Não foi possível carregar o backup do livro:', erro);
-    return false;
+    return null;
   }
 }
 
@@ -601,38 +600,13 @@ async function carregarRecomendacoes(genero) {
 
   try {
     document.getElementById('generoRecomendado').textContent = `Livros do gênero: ${genero}`;
-
-    const headers = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const resposta = await fetchComFallback(`${URL_BASE}/livros/busca/genero?genero=${encodeURIComponent(genero)}`, {
-      headers: headers
-    });
-
-    if (!resposta.ok) {
-      throw new Error(`Status ${resposta.status}`);
-    }
-
-    const dados = await resposta.json();
-    let recomendacoes = [];
-
-    if (Array.isArray(dados)) {
-      recomendacoes = dados;
-    } else if (Array.isArray(dados.livros)) {
-      recomendacoes = dados.livros;
-    } else if (Array.isArray(dados.dados)) {
-      recomendacoes = dados.dados;
-    } else if (Array.isArray(dados.data)) {
-      recomendacoes = dados.data;
-    }
-
-    // Filtra o livro atual das recomendações
-    recomendacoes = recomendacoes.filter(l => (l._id || l.id) !== livroId).slice(0, 6);
+    const recomendacoes = await buscarRecomendacoesPorGenero(
+      genero,
+      livroId,
+      listarPaginaPublica
+    );
 
     console.log(`Encontradas ${recomendacoes.length} recomendações`);
-
     if (recomendacoes.length === 0) {
       semRecomendacoes.style.display = 'block';
     } else {
@@ -641,6 +615,8 @@ async function carregarRecomendacoes(genero) {
     }
   } catch (erro) {
     console.warn('Erro ao carregar recomendações:', erro);
+    semRecomendacoes.querySelector('p').textContent =
+      'Não foi possível carregar as recomendações. Tente novamente mais tarde.';
     semRecomendacoes.style.display = 'block';
   } finally {
     carregandoRecomendacoes.style.display = 'none';

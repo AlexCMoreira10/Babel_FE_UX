@@ -1,13 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signInWithCredential,
-  GoogleAuthProvider
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { Capacitor } from "@capacitor/core";
-
+const testMode = window.BABEL_TEST_MODE === true;
 const firebaseConfig = {
   apiKey: "AIzaSyA1GzaVBqE6BQ8QALyv6oD2uqFlUuk0S54",
   authDomain: "babel-5dcbd.firebaseapp.com",
@@ -22,8 +13,23 @@ const URL_BASE_REMOTE = "https://babel-be-lovat.vercel.app/api";
 const URL_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
   ? URL_BASE_LOCAL
   : URL_BASE_REMOTE;
-const auth = getAuth(initializeApp(firebaseConfig));
-const provider = new GoogleAuthProvider();
+let auth;
+let signInWithEmailAndPassword;
+let signInWithPopup;
+let signInWithCredential;
+let GoogleAuthProvider;
+let provider;
+let Capacitor;
+const firebaseReady = testMode ? Promise.resolve() : Promise.all([
+  import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"),
+  import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"),
+  import("@capacitor/core")
+]).then(([appModule, authModule, capacitorModule]) => {
+  auth = authModule.getAuth(appModule.initializeApp(firebaseConfig));
+  ({ signInWithEmailAndPassword, signInWithPopup, signInWithCredential, GoogleAuthProvider } = authModule);
+  provider = new GoogleAuthProvider();
+  Capacitor = capacitorModule.Capacitor;
+});
 const loginBtn = document.getElementById("loginBtn");
 const emailLoginForm = document.getElementById("emailLoginForm");
 const emailLoginBtn = document.getElementById("emailLoginBtn");
@@ -117,8 +123,14 @@ if (emailLoginForm) {
     try {
       const email = document.getElementById("loginEmail").value.trim();
       const senha = document.getElementById("loginPassword").value;
-      const resultado = await signInWithEmailAndPassword(auth, email, senha);
-      await salvarSessao(resultado.user);
+      let usuario;
+      if (testMode) {
+        usuario = await window.BabelTestAuth.login(email, senha);
+      } else {
+        await firebaseReady;
+        usuario = (await signInWithEmailAndPassword(auth, email, senha)).user;
+      }
+      await salvarSessao(usuario);
     } catch (erro) {
       console.error("Erro no login com e-mail:", erro);
       loginFeedback.textContent = erro.message?.startsWith("Não foi possível sincronizar")
@@ -137,9 +149,15 @@ if (loginBtn) {
     loginFeedback.textContent = "Conectando ao Google...";
 
     try {
-      const usuario = Capacitor.getPlatform() === "android"
-        ? await entrarComGoogleAndroid()
-        : (await signInWithPopup(auth, provider)).user;
+      let usuario;
+      if (testMode) {
+        usuario = window.BabelTestAuth.guest();
+      } else {
+        await firebaseReady;
+        usuario = Capacitor.getPlatform() === "android"
+          ? await entrarComGoogleAndroid()
+          : (await signInWithPopup(auth, provider)).user;
+      }
       await salvarSessao(usuario);
     } catch (erro) {
       console.error("Erro no login com Google:", erro);

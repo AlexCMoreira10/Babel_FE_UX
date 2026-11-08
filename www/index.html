@@ -109,6 +109,10 @@
         <div class="filtro-box">
           <div class="campo-busca">
             <ion-icon name="search-outline"></ion-icon>
+            <select id="campoPesquisa" aria-label="Buscar por">
+              <option value="titulo">Título</option>
+              <option value="autor">Autor (nome exato)</option>
+            </select>
             <input type="text" id="pesquisa" placeholder="Buscar por título...">
             <button id="searchBtn" class="btn-add">Pesquisar</button>
           </div>
@@ -129,6 +133,7 @@
             </select>
             <button id="buscarProximosBtn" class="btn-add" type="button">Buscar livros próximos</button>
             <p id="proximidadeFeedback" role="status" aria-live="polite"></p>
+            <p>Busca por autor disponível somente na busca normal, com nome completo e exato.</p>
           </div>
         </div>
 
@@ -230,6 +235,7 @@ let livros = [];
 
 const grid = document.getElementById('gridLivros') || document.querySelector('.grid-livros');
 const input = document.getElementById('pesquisa');
+const campoPesquisa = document.getElementById('campoPesquisa');
 const searchBtn = document.getElementById('searchBtn');
 const botoes = document.querySelectorAll('.filtros button');
 const contador = document.getElementById('contador-livros');
@@ -296,19 +302,28 @@ if (buscarProximosBtn) {
     if (buscaProximaAtiva) {
       buscaProximaAtiva = false;
       centroBuscaProxima = null;
+      campoPesquisa.querySelector('option[value="autor"]').disabled = false;
       buscarProximosBtn.textContent = 'Buscar livros próximos';
       proximidadeFeedback.textContent = 'Busca normal ativada. Sua localização foi removida da memória desta página.';
       atualizarPrimeiraPagina();
       return;
     }
 
+    if (campoPesquisa.value === 'autor') {
+      proximidadeFeedback.textContent = 'Para buscar livros próximos, selecione a busca por título.';
+      proximidadeFeedback.classList.add('erro');
+      return;
+    }
+
     invalidarBuscaEmAndamento();
     buscarProximosBtn.disabled = true;
+    campoPesquisa.disabled = true;
     proximidadeFeedback.classList.remove('erro');
     proximidadeFeedback.textContent = 'Solicitando sua localização...';
     try {
       centroBuscaProxima = await obterPosicaoAtual();
       buscaProximaAtiva = true;
+      campoPesquisa.querySelector('option[value="autor"]').disabled = true;
       buscarProximosBtn.textContent = 'Desativar busca por proximidade';
       proximidadeFeedback.textContent = `Buscando em até ${raioProximidade.value} km. Sua localização não será salva.`;
       atualizarPrimeiraPagina();
@@ -318,6 +333,7 @@ if (buscarProximosBtn) {
       proximidadeFeedback.classList.add('erro');
     } finally {
       buscarProximosBtn.disabled = false;
+      campoPesquisa.disabled = false;
     }
   });
 }
@@ -337,6 +353,7 @@ async function fetchFiltered(page = 1) {
     centro: centroBuscaProxima,
     raioKm: Number(raioProximidade.value),
     tipo: tipoSelecionado,
+    campo: campoPesquisa.value,
     titulo: (input.value || '').trim()
   };
   let showTimer;
@@ -346,7 +363,7 @@ async function fetchFiltered(page = 1) {
     params.set('page', page);
     params.set('limit', pageSize);
     if (busca.tipo && busca.tipo !== 'todos') params.set('tipo', busca.tipo);
-    if (busca.titulo) params.set('titulo', busca.titulo);
+    if (busca.titulo) params.set(busca.campo, busca.titulo);
 
     showTimer = setTimeout(() => {
       if (requestId === requisicaoLivrosAtual && carregandoEstante) {
@@ -524,6 +541,13 @@ const debouncedSearch = debounce(() => {
 input.addEventListener('input', () => {
   invalidarBuscaEmAndamento();
   debouncedSearch();
+});
+
+campoPesquisa.addEventListener('change', () => {
+  input.placeholder = campoPesquisa.value === 'autor'
+    ? 'Buscar pelo nome exato do autor...'
+    : 'Buscar por título...';
+  atualizarPrimeiraPagina();
 });
 
 // Enter key triggers immediate search

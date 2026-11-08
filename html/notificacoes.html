@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notificações | Estante</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "@capacitor/core": "https://esm.sh/@capacitor/core@8.5.2",
+        "@capacitor-mlkit/barcode-scanning": "https://esm.sh/@capacitor-mlkit/barcode-scanning@8.2.1?external=@capacitor/core"
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="../css/Main.css">
+  <script type="module" src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.esm.js"></script>
+  <script nomodule src="https://unpkg.com/@ionic/core@latest/dist/ionic/ionic.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@ionic/core@latest/css/ionic.bundle.css">
+</head>
+<body data-profile-page="notificacoes">
+<ion-app>
+  <ion-content fullscreen>
+    <header class="navbar">
+      <div class="logo"><ion-icon name="book-outline"></ion-icon><span>Estante</span></div>
+      <a href="../index.html" class="btn-secondary">Voltar à estante</a>
+    </header>
+    <main class="profile-workspace">
+      <nav class="profile-sidebar" aria-label="Menu do perfil">
+        <span class="profile-sidebar-title">Minha conta</span>
+        <a href="./perfil.html" data-profile-link="perfil"><ion-icon name="person-outline"></ion-icon>Perfil</a>
+        <a href="./anuncios.html" data-profile-link="anuncios"><ion-icon name="albums-outline"></ion-icon>Meus anúncios</a>
+        <a href="./estante.html" data-profile-link="estante"><ion-icon name="library-outline"></ion-icon>Minha estante</a>
+        <a href="./notificacoes.html" data-profile-link="notificacoes" aria-current="page"><ion-icon name="notifications-outline"></ion-icon>Notificações</a>
+        <a href="./qrcode.html" data-profile-link="qrcode"><ion-icon name="qr-code-outline"></ion-icon>QR Code publicado</a>
+        <button id="logoutBtn" type="button"><ion-icon name="log-out-outline"></ion-icon>Sair da conta</button>
+      </nav>
+      <section class="profile-content">
+        <div class="profile-page-heading">
+          <span>Atualizações</span>
+          <h1>Notificações</h1>
+          <p>Acompanhe pedidos de aquisição e novidades sobre seus livros.</p>
+        </div>
+        <p id="notificationsMessage" role="status" aria-live="polite">Carregando notificações...</p>
+        <div id="notificationsList" class="notifications-list"></div>
+      </section>
+    </main>
+  </ion-content>
+</ion-app>
+<script type="module" src="../js/perfil.js"></script>
+</body>
+</html>

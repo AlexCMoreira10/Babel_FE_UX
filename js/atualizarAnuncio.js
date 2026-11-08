@@ -1,4 +1,10 @@
-import { validarListaUrlsImagem } from './image-utils.js';
+import { resolverUrlImagem } from './image-utils.js';
+import {
+  aguardarUsuarioFirebase,
+  enviarImagensLivro,
+  removerImagensStorageProprias,
+  validarArquivosImagem
+} from './firebase-storage.js';
 
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
@@ -34,9 +40,13 @@ const precoInput = document.getElementById('preco');
 const generosInput = document.getElementById('generos');
 const localizacaoInput = document.getElementById('localizacao');
 const descricaoInput = document.getElementById('descricao');
-const fotosInput = document.getElementById('fotos');
+const fotosAtuaisContainer = document.getElementById('fotosAtuais');
+const fotosArquivosInput = document.getElementById('fotosArquivos');
+const fotosExternasInput = document.getElementById('fotosExternas');
+const fotosNovasPreview = document.getElementById('fotosNovasPreview');
 const trocasInput = document.getElementById('trocasInteresses');
 const aceitaRetiradaInput = document.getElementById('aceitaRetirada');
+let fotosExistentes = [];
 
 function normalizeLivroData(data) {
   if (!data) return {};
@@ -54,6 +64,83 @@ function toStringArray(value) {
   return [String(value)];
 }
 
+function obterUrlsExternas() {
+  return fotosExternasInput.value
+    .split(/[,\n]/)
+    .map((url) => url.trim())
+    .filter(Boolean);
+}
+
+function validarUrlsExternas(urls) {
+  return urls.filter((valor) => {
+    try {
+      const url = new URL(valor);
+      return url.protocol !== 'https:' ||
+        !url.hostname ||
+        url.username ||
+        url.password ||
+        url.hostname === 'firebasestorage.googleapis.com' ||
+        url.hostname === 'storage.googleapis.com' ||
+        url.hostname.endsWith('.firebasestorage.app');
+    } catch {
+      return true;
+    }
+  });
+}
+
+function renderizarFotosExistentes() {
+  fotosAtuaisContainer.replaceChildren();
+  fotosExistentes.forEach((url, index) => {
+    const item = document.createElement('label');
+    item.className = 'form-group';
+
+    const imagem = document.createElement('img');
+    imagem.src = resolverUrlImagem(url);
+    imagem.alt = `Imagem atual ${index + 1}`;
+    imagem.style.width = '120px';
+    imagem.style.height = '120px';
+    imagem.style.objectFit = 'cover';
+    imagem.style.borderRadius = '8px';
+
+    const manter = document.createElement('input');
+    manter.type = 'checkbox';
+    manter.checked = true;
+    manter.dataset.photoIndex = String(index);
+
+    const texto = document.createElement('span');
+    texto.textContent = `Manter imagem ${index + 1}`;
+    item.append(imagem, manter, texto);
+    fotosAtuaisContainer.append(item);
+  });
+}
+
+function obterFotosMantidas() {
+  const indicesRemovidos = new Set(
+    Array.from(fotosAtuaisContainer.querySelectorAll('input[type="checkbox"]:not(:checked)'))
+      .map((input) => Number(input.dataset.photoIndex))
+  );
+  return fotosExistentes.filter((_, index) => !indicesRemovidos.has(index));
+}
+
+function atualizarPreviewNovasFotos() {
+  fotosNovasPreview.replaceChildren();
+  const arquivos = Array.from(fotosArquivosInput.files || []);
+  const urls = obterUrlsExternas();
+  const totalAtual = obterFotosMantidas().length;
+
+  const contador = document.createElement('span');
+  contador.className = 'small-text';
+  contador.textContent = `${totalAtual + arquivos.length + urls.length} de 5 imagens após salvar`;
+  fotosNovasPreview.append(contador);
+
+  for (const arquivo of arquivos) {
+    const item = document.createElement('p');
+    item.className = 'small-text';
+    item.textContent = arquivo.name;
+    fotosNovasPreview.append(item);
+  }
+}
+
 const params = new URLSearchParams(window.location.search);
 const livroId = params.get('id');
 
@@ -67,22 +154,59 @@ tipoSelect.addEventListener('change', () => {
   precoGroup.style.display = tipoSelect.value === 'venda' ? 'block' : 'none';
   precoInput.required = tipoSelect.value === 'venda';
 });
+fotosAtuaisContainer.addEventListener('change', atualizarPreviewNovasFotos);
+fotosArquivosInput.addEventListener('change', atualizarPreviewNovasFotos);
+fotosExternasInput.addEventListener('input', atualizarPreviewNovasFotos);
 
 formAtualizar.addEventListener('submit', async (event) => {
   event.preventDefault();
   const token = localStorage.getItem('token');
-  const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
+  let usuarioLocal = null;
+  try {
+    usuarioLocal = JSON.parse(localStorage.getItem('usuario') || 'null');
+  } catch {
+    usuarioLocal = null;
+  }
 
-  if (!token || !usuario) {
+  if (!token || !usuarioLocal) {
     alert('Você precisa estar logado para atualizar o anúncio.');
     window.location.href = './login.html';
     return;
   }
 
-  const { urls: fotos, invalidas } = validarListaUrlsImagem(fotosInput.value);
+  const fotosMantidas = obterFotosMantidas();
+  const fotosExternasNovas = obterUrlsExternas();
+  const invalidas = validarUrlsExternas(fotosExternasNovas);
   if (invalidas.length) {
-    alert(`Confira as URLs das imagens. Use endereços válidos iniciados por http:// ou https://.\n\nInválida(s): ${invalidas.join(', ')}`);
-    fotosInput.focus();
+    alert(
+      'Confira as URLs externas. Use endereços HTTPS válidos que não sejam links do Firebase Storage.\n\n' +
+      invalidas.join(', ')
+    );
+    fotosExternasInput.focus();
+    return;
+  }
+
+  let arquivosImagem;
+  try {
+    arquivosImagem = validarArquivosImagem(
+      fotosArquivosInput.files,
+      fotosMantidas.length + fotosExternasNovas.length
+    );
+  } catch (erro) {
+    alert(erro.message);
+    fotosArquivosInput.focus();
+    return;
+  }
+
+  let usuarioFirebase;
+  try {
+    usuarioFirebase = await aguardarUsuarioFirebase();
+  } catch (erro) {
+    alert(erro.message);
+    return;
+  }
+  if (usuarioFirebase.uid !== usuarioLocal.uid) {
+    alert('A sessão Firebase não corresponde à conta atual. Entre novamente.');
     return;
   }
 
@@ -96,18 +220,12 @@ formAtualizar.addEventListener('submit', async (event) => {
     tipo: tipoSelect.value,
     localizacao: localizacaoInput.value.trim(),
     descricao: descricaoInput.value.trim(),
-    generos: generosInput.value
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean),
-    fotos,
+    generos: generosInput.value.split(',').map((item) => item.trim()).filter(Boolean),
+    fotos: fotosMantidas.concat(fotosExternasNovas),
     trocas: {
-      interesses: trocasInput.value
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean),
-      aceitaRetirada: aceitaRetiradaInput.checked,
-    },
+      interesses: trocasInput.value.split(',').map((item) => item.trim()).filter(Boolean),
+      aceitaRetirada: aceitaRetiradaInput.checked
+    }
   };
 
   if (tipoSelect.value === 'venda') {
@@ -122,33 +240,130 @@ formAtualizar.addEventListener('submit', async (event) => {
     delete payload.preco;
   }
 
+  const submitBtn = formAtualizar.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Salvando alterações...';
+  }
+
+  let draftId = '';
+  let uploadedFiles = [];
+  let atualizacaoConfirmada = false;
   try {
-    const response = await fetchComFallback(`${URL_BASE}/livros/${encodeURIComponent(livroId)}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    if (arquivosImagem.length) {
+      const respostaRascunho = await fetchComFallback(
+        URL_BASE + '/livros/' + encodeURIComponent(livroId) + '/rascunhos-imagens',
+        {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + token }
+        }
+      );
+      const dadosRascunho = await respostaRascunho.json().catch(() => null);
+      if (!respostaRascunho.ok) {
+        throw new Error(dadosRascunho?.erro || 'Não foi possível iniciar o envio das imagens.');
+      }
+      draftId = dadosRascunho?.id || '';
+      if (!draftId) throw new Error('A API não retornou o identificador do envio.');
+
+      if (submitBtn) submitBtn.textContent = 'Enviando imagens...';
+      try {
+        uploadedFiles = await enviarImagensLivro(arquivosImagem, {
+          usuario: usuarioFirebase,
+          livroId,
+          uploadId: draftId
+        });
+      } catch (erro) {
+        uploadedFiles = erro.uploadedFiles || [];
+        throw erro;
+      }
+      payload.fotos.push(...uploadedFiles.map((imagem) => imagem.url));
+      payload.imageDraftId = draftId;
+    }
+
+    if (payload.fotos.length > 5) {
+      throw new Error('O anúncio pode ter no máximo 5 imagens.');
+    }
+    if (submitBtn) submitBtn.textContent = 'Confirmando alterações...';
+    const response = await fetchComFallback(
+      URL_BASE + '/livros/' + encodeURIComponent(livroId),
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + token
+        },
+        body: JSON.stringify(payload)
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage = errorText;
       try {
         const errorData = JSON.parse(errorText);
-        errorMessage = errorData.message || errorData.error || errorData.erro || errorData.mensagem || errorText;
+        errorMessage = errorData.erro || errorData.message || errorData.error || errorText;
       } catch {
         // A resposta pode conter texto simples em vez de JSON.
       }
-      throw new Error(errorMessage || `Falha ao atualizar o anúncio (HTTP ${response.status}).`);
+
+      const verifyResponse = await fetchComFallback(
+        URL_BASE + '/livros/' + encodeURIComponent(livroId),
+        { headers: { Authorization: 'Bearer ' + token } }
+      );
+      const livroAtualizado = verifyResponse.ok
+        ? normalizeLivroData(await verifyResponse.json())
+        : null;
+      if (livroAtualizado?.usuarioId === usuarioFirebase.uid &&
+          JSON.stringify(livroAtualizado.fotos || []) === JSON.stringify(payload.fotos)) {
+        atualizacaoConfirmada = true;
+      } else {
+        throw new Error(errorMessage || 'Não foi possível atualizar o anúncio.');
+      }
+    } else {
+      atualizacaoConfirmada = true;
     }
 
-    alert('Anúncio atualizado com sucesso.');
-    window.location.href = './perfil.html';
+    if (atualizacaoConfirmada) {
+      const removidas = fotosExistentes.filter((foto) => !fotosMantidas.includes(foto));
+      let avisoLimpeza = '';
+      try {
+        await removerImagensStorageProprias(removidas, usuarioFirebase.uid);
+      } catch (erro) {
+        console.error('A atualização foi salva, mas algumas imagens antigas não foram removidas:', erro);
+        avisoLimpeza = ' A atualização foi salva, mas não foi possível limpar todos os arquivos removidos do Storage.';
+      }
+      alert('Anúncio atualizado com sucesso.' + avisoLimpeza);
+      window.location.href = './perfil.html';
+      return;
+    }
   } catch (error) {
     console.error('Erro na atualização:', error);
-    alert(`Não foi possível atualizar o anúncio: ${error.message}`);
+    let avisoLimpeza = '';
+    if (draftId && !atualizacaoConfirmada) {
+      try {
+        const respostaLimpeza = await fetchComFallback(
+          URL_BASE + '/livros/' + encodeURIComponent(livroId) +
+            '/rascunhos-imagens/' + encodeURIComponent(draftId),
+          {
+            method: 'DELETE',
+            headers: { Authorization: 'Bearer ' + token }
+          }
+        );
+        if (!respostaLimpeza.ok && respostaLimpeza.status !== 404) {
+          const resultadoLimpeza = await respostaLimpeza.json().catch(() => null);
+          throw new Error(resultadoLimpeza?.erro || 'HTTP ' + respostaLimpeza.status);
+        }
+      } catch (erroLimpeza) {
+        console.error('Não foi possível cancelar a operação temporária de imagens:', erroLimpeza);
+        avisoLimpeza = ' Os uploads não associados serão removidos pela tarefa automática.';
+      }
+    }
+    alert('Não foi possível atualizar o anúncio: ' + error.message + avisoLimpeza);
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Salvar alterações';
+    }
   }
 });
 
@@ -184,7 +399,9 @@ async function carregarLivro() {
     tipoSelect.value = livro.tipo || '';
     localizacaoInput.value = livro.localizacao || '';
     descricaoInput.value = livro.descricao || '';
-    fotosInput.value = Array.isArray(livro.fotos) ? livro.fotos.join(', ') : livro.fotos || '';
+    fotosExistentes = toStringArray(livro.fotos);
+    renderizarFotosExistentes();
+    atualizarPreviewNovasFotos();
     generosInput.value = Array.isArray(livro.generos) ? livro.generos.join(', ') : livro.generos || '';
     trocasInput.value = Array.isArray(livro.trocas?.interesses) ? livro.trocas.interesses.join(', ') : livro.trocas?.interesses || '';
     aceitaRetiradaInput.checked = livro.trocas?.aceitaRetirada ?? false;
