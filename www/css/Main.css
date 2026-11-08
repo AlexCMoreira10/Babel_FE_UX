@@ -2179,6 +2179,11 @@ ion-content {
   gap: 14px;
 }
 
+.profile-edit-form {
+  display: grid;
+  gap: 18px;
+}
+
 .profile-item {
   min-width: 0;
   padding: 18px;
@@ -2187,16 +2192,147 @@ ion-content {
   border-radius: 16px;
 }
 
-.profile-item strong {
+.profile-item strong,
+.profile-item label,
+.profile-phone-fieldset legend {
   display: block;
   margin-bottom: 8px;
   color: var(--muted);
   font-size: 13px;
+  font-weight: 700;
 }
 
 .profile-item p {
   overflow-wrap: anywhere;
   font-weight: 700;
+}
+
+.profile-item input {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: white;
+  color: var(--text);
+  font: inherit;
+}
+
+.profile-item input:disabled {
+  border-color: transparent;
+  background: transparent;
+  padding-left: 0;
+  font-weight: 700;
+}
+
+.profile-readonly-note {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.profile-phone-fieldset,
+.profile-address-fieldset {
+  min-width: 0;
+}
+
+.profile-phone-fieldset {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-phone-fieldset legend,
+.profile-address-fieldset legend {
+  padding: 0 8px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.profile-phone-list {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-phone-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-phone-row input {
+  flex: 1;
+}
+
+.profile-phone-remove {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: white;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+}
+
+.profile-phone-fieldset > button {
+  justify-self: start;
+  padding: 10px 14px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.profile-address-fieldset {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.profile-address-fieldset legend span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.profile-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.profile-edit-actions button {
+  justify-content: center;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.profile-edit-actions .btn-secondary {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+}
+
+.profile-edit-actions button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.profile-edit-form .auth-feedback {
+  margin: 0;
+}
+
+.profile-edit-form .auth-feedback.erro {
+  color: #b42318;
+}
+
+.profile-edit-form .auth-feedback.sucesso {
+  color: var(--primary-strong);
 }
 
 .profile-content .form-actions {
@@ -2286,7 +2422,8 @@ ion-content {
   }
 
   .profile-content .profile-section-header > a,
-  .profile-content .form-actions > * {
+  .profile-content .form-actions > *,
+  .profile-edit-actions > * {
     width: 100%;
     justify-content: center;
   }

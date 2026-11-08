@@ -5,7 +5,6 @@ import {
 } from './books-api.js';
 import { resolverUrlImagem } from './image-utils.js';
 
-const perfilNome = document.getElementById('perfilNome');
 const perfilEmail = document.getElementById('perfilEmail');
 const perfilUid = document.getElementById('perfilUid');
 const logoutBtn = document.getElementById('logoutBtn');
@@ -19,11 +18,20 @@ const scanFeedback = document.getElementById('scanFeedback');
 const notificationsList = document.getElementById('notificationsList');
 const notificationsMessage = document.getElementById('notificationsMessage');
 const paginaPerfil = document.body.dataset.profilePage || 'perfil';
+const profileForm = document.getElementById('profileForm');
+const profilePhoneList = document.getElementById('profilePhoneList');
+const profileEditBtn = document.getElementById('profileEditBtn');
+const profileSaveBtn = document.getElementById('profileSaveBtn');
+const profileCancelBtn = document.getElementById('profileCancelBtn');
+const profileEditFeedback = document.getElementById('profileEditFeedback');
+const addProfilePhoneBtn = document.getElementById('addProfilePhoneBtn');
 
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
 
 let URL_BASE = URL_BASE_LOCAL;
+let perfilAtual = null;
+let modoEdicaoPerfil = false;
 
 async function fetchComFallback(url, options = {}) {
   try {
@@ -40,6 +48,194 @@ async function fetchComFallback(url, options = {}) {
   }
 }
 
+function formatarDataNascimento(valor) {
+  if (!valor) return '';
+
+  const segundos = typeof valor === 'object' ? valor._seconds ?? valor.seconds : null;
+  const data = valor instanceof Date
+    ? valor
+    : Number.isFinite(segundos)
+      ? new Date(segundos * 1000)
+      : new Date(valor);
+
+  return Number.isNaN(data.getTime()) ? '' : data.toISOString().slice(0, 10);
+}
+
+function definirModoEdicaoPerfil(editar) {
+  modoEdicaoPerfil = editar;
+  profileForm.querySelectorAll('input').forEach(input => {
+    input.disabled = !editar;
+  });
+  profilePhoneList.querySelectorAll('.profile-phone-remove').forEach(button => {
+    button.disabled = !editar;
+  });
+  addProfilePhoneBtn.disabled = !editar;
+  profileEditBtn.classList.toggle('hidden', editar);
+  profileSaveBtn.classList.toggle('hidden', !editar);
+  profileCancelBtn.classList.toggle('hidden', !editar);
+}
+
+function adicionarCampoTelefone(telefone = '') {
+  const linha = document.createElement('div');
+  linha.className = 'profile-phone-row';
+
+  const input = document.createElement('input');
+  input.name = 'profilePhone';
+  input.type = 'tel';
+  input.autocomplete = 'tel';
+  input.placeholder = '(11) 99999-9999';
+  input.setAttribute('aria-label', 'Telefone para contato');
+  input.required = true;
+  input.value = telefone;
+  input.disabled = !modoEdicaoPerfil;
+
+  const remover = document.createElement('button');
+  remover.className = 'profile-phone-remove';
+  remover.type = 'button';
+  remover.textContent = 'Remover';
+  remover.setAttribute('aria-label', 'Remover telefone');
+  remover.disabled = !modoEdicaoPerfil;
+  remover.addEventListener('click', () => linha.remove());
+
+  linha.append(input, remover);
+  profilePhoneList.append(linha);
+}
+
+function preencherFormularioPerfil(perfil) {
+  const definirValor = (seletor, valor) => {
+    const campo = profileForm.querySelector(seletor);
+    if (campo) campo.value = valor ?? '';
+  };
+  const endereco = perfil.endereco || {};
+  const coordenadas = perfil.geocode?.coordinates || [];
+
+  document.getElementById('perfilEmail').textContent = perfil.email || 'Não informado';
+  document.getElementById('perfilUid').textContent = perfil.uid || perfil.id || 'Não disponível';
+  definirValor('#profileName', perfil.nome || perfil.displayName || '');
+  definirValor('#profileBirthDate', formatarDataNascimento(perfil.data_nascimento));
+
+  profilePhoneList.replaceChildren();
+  const telefones = Array.isArray(perfil.telefone) ? perfil.telefone : [];
+  (telefones.length ? telefones : ['']).forEach(adicionarCampoTelefone);
+
+  definirValor('#profileCep', endereco.cep);
+  definirValor('#profileStreet', endereco.rua);
+  definirValor('#profileNumber', endereco.numero);
+  definirValor('#profileComplement', endereco.complemento);
+  definirValor('#profileNeighborhood', endereco.bairro);
+  definirValor('#profileCity', endereco.cidade);
+  definirValor('#profileState', endereco.estado);
+  definirValor('#profileLongitude', coordenadas[0]);
+  definirValor('#profileLatitude', coordenadas[1]);
+}
+
+async function carregarDadosPerfil() {
+  profileEditFeedback.textContent = 'Carregando seus dados pessoais...';
+  try {
+    perfilAtual = await requisitarApiLivros('/me');
+    preencherFormularioPerfil(perfilAtual);
+    profileEditFeedback.textContent = '';
+  } catch (erro) {
+    console.error('Erro ao carregar dados pessoais:', erro);
+    profileEditFeedback.textContent = 'Não foi possível carregar seus dados pessoais. Tente novamente.';
+    profileEditFeedback.classList.add('erro');
+  }
+}
+
+function obterDadosFormularioPerfil() {
+  const telefone = [...profilePhoneList.querySelectorAll('input[name="profilePhone"]')]
+    .map(input => input.value.trim())
+    .filter(Boolean);
+  const longitude = document.getElementById('profileLongitude').value;
+  const latitude = document.getElementById('profileLatitude').value;
+  const endereco = Object.fromEntries(
+    ['rua', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep']
+      .map(campo => [campo, profileForm.elements.namedItem(campo).value.trim()])
+  );
+  const geocode = longitude === '' && latitude === ''
+    ? null
+    : {
+        type: 'Point',
+        coordinates: [Number(longitude), Number(latitude)]
+      };
+
+  return {
+    nome: document.getElementById('profileName').value.trim(),
+    telefone,
+    data_nascimento: document.getElementById('profileBirthDate').value,
+    endereco,
+    geocode
+  };
+}
+
+async function salvarPerfil(evento) {
+  evento.preventDefault();
+  if (!profileForm.reportValidity()) return;
+
+  const dados = obterDadosFormularioPerfil();
+  if (!dados.telefone.length) {
+    profileEditFeedback.textContent = 'Informe ao menos um telefone para contato.';
+    profileEditFeedback.classList.add('erro');
+    return;
+  }
+  const longitudePreenchida = document.getElementById('profileLongitude').value !== '';
+  const latitudePreenchida = document.getElementById('profileLatitude').value !== '';
+  if (longitudePreenchida !== latitudePreenchida) {
+    profileEditFeedback.textContent = 'Preencha longitude e latitude ou deixe os dois campos vazios.';
+    profileEditFeedback.classList.add('erro');
+    return;
+  }
+  if (dados.geocode && dados.geocode.coordinates.some(coordenada => !Number.isFinite(coordenada))) {
+    profileEditFeedback.textContent = 'Preencha longitude e latitude ou deixe os dois campos vazios.';
+    profileEditFeedback.classList.add('erro');
+    return;
+  }
+
+  profileSaveBtn.disabled = true;
+  profileEditFeedback.classList.remove('erro', 'sucesso');
+  profileEditFeedback.textContent = 'Salvando alterações...';
+  try {
+    perfilAtual = await requisitarApiLivros('/me', { method: 'PUT', body: dados });
+    preencherFormularioPerfil(perfilAtual);
+
+    const usuarioSessao = JSON.parse(localStorage.getItem('usuario') || '{}');
+    localStorage.setItem('usuario', JSON.stringify({
+      ...usuarioSessao,
+      displayName: perfilAtual.nome
+    }));
+
+    definirModoEdicaoPerfil(false);
+    profileEditFeedback.textContent = 'Seus dados foram atualizados com sucesso.';
+    profileEditFeedback.classList.add('sucesso');
+  } catch (erro) {
+    console.error('Erro ao salvar dados pessoais:', erro);
+    profileEditFeedback.textContent = erro.status === 400
+      ? erro.message
+      : 'Não foi possível salvar seus dados. Tente novamente.';
+    profileEditFeedback.classList.add('erro');
+  } finally {
+    profileSaveBtn.disabled = false;
+  }
+}
+
+function inicializarEdicaoPerfil() {
+  if (!profileForm) return;
+
+  profileEditBtn.addEventListener('click', () => {
+    definirModoEdicaoPerfil(true);
+    profileEditFeedback.classList.remove('erro', 'sucesso');
+    profileEditFeedback.textContent = '';
+  });
+  profileCancelBtn.addEventListener('click', () => {
+    if (perfilAtual) preencherFormularioPerfil(perfilAtual);
+    definirModoEdicaoPerfil(false);
+    profileEditFeedback.classList.remove('erro', 'sucesso');
+    profileEditFeedback.textContent = '';
+  });
+  addProfilePhoneBtn.addEventListener('click', () => adicionarCampoTelefone());
+  profileForm.addEventListener('submit', salvarPerfil);
+}
+
 function carregarPerfil() {
   const usuarioStr = localStorage.getItem('usuario');
 
@@ -50,9 +246,11 @@ function carregarPerfil() {
 
   try {
     const usuario = JSON.parse(usuarioStr);
-    if (perfilNome) perfilNome.textContent = usuario.displayName || 'Usuário';
+    const nomePerfil = document.getElementById('profileName');
+    if (nomePerfil) nomePerfil.value = usuario.displayName || 'Usuário';
     if (perfilEmail) perfilEmail.textContent = usuario.email || 'Não informado';
     if (perfilUid) perfilUid.textContent = usuario.uid || 'Não disponível';
+    if (paginaPerfil === 'perfil' && profileForm) carregarDadosPerfil();
 
     document.querySelectorAll('[data-profile-link]').forEach(link => {
       if (link.dataset.profileLink === paginaPerfil) {
@@ -817,6 +1015,7 @@ if (agoraNaoBtn) {
  * 4. Marca como exibido para não aparecer novamente
  */
 window.addEventListener('DOMContentLoaded', () => {
+  inicializarEdicaoPerfil();
   carregarPerfil();
   if (paginaPerfil === 'perfil') {
     setTimeout(() => {

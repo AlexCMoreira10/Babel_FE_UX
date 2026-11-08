@@ -46,11 +46,88 @@
           <p>Gerencie suas informações e preferências da conta.</p>
         </div>
 
-        <div class="profile-info">
-          <div class="profile-item"><strong>Nome</strong><p id="perfilNome">Carregando...</p></div>
-          <div class="profile-item"><strong>E-mail</strong><p id="perfilEmail">Carregando...</p></div>
-          <div class="profile-item"><strong>ID</strong><p id="perfilUid">Carregando...</p></div>
-        </div>
+        <form id="profileForm" class="profile-edit-form" novalidate>
+          <div class="profile-info">
+            <div class="profile-item">
+              <label for="profileName">Nome completo</label>
+              <input id="profileName" name="nome" type="text" maxlength="120" autocomplete="name" required disabled>
+            </div>
+            <div class="profile-item">
+              <strong>E-mail</strong>
+              <p id="perfilEmail">Carregando...</p>
+              <span class="profile-readonly-note">Não pode ser alterado</span>
+            </div>
+            <div class="profile-item">
+              <strong>ID</strong>
+              <p id="perfilUid">Carregando...</p>
+              <span class="profile-readonly-note">Não pode ser alterado</span>
+            </div>
+            <div class="profile-item">
+              <label for="profileBirthDate">Data de nascimento</label>
+              <input id="profileBirthDate" name="data_nascimento" type="date" autocomplete="bday" required disabled>
+            </div>
+            <fieldset class="profile-item profile-phone-fieldset">
+              <legend>Telefones para contato</legend>
+              <div id="profilePhoneList" class="profile-phone-list"></div>
+              <button id="addProfilePhoneBtn" class="btn-secondary" type="button" disabled>+ Adicionar telefone</button>
+            </fieldset>
+          </div>
+
+          <fieldset class="profile-address-fieldset">
+            <legend>Endereço</legend>
+            <div class="profile-info">
+              <div class="profile-item">
+                <label for="profileCep">CEP</label>
+                <input id="profileCep" name="cep" type="text" maxlength="9" autocomplete="postal-code" disabled>
+              </div>
+              <div class="profile-item">
+                <label for="profileStreet">Rua</label>
+                <input id="profileStreet" name="rua" autocomplete="street-address" disabled>
+              </div>
+              <div class="profile-item">
+                <label for="profileNumber">Número</label>
+                <input id="profileNumber" name="numero" type="text" inputmode="numeric" disabled>
+              </div>
+              <div class="profile-item">
+                <label for="profileComplement">Complemento</label>
+                <input id="profileComplement" name="complemento" disabled>
+              </div>
+              <div class="profile-item">
+                <label for="profileNeighborhood">Bairro</label>
+                <input id="profileNeighborhood" name="bairro" disabled>
+              </div>
+              <div class="profile-item">
+                <label for="profileCity">Cidade</label>
+                <input id="profileCity" name="cidade" autocomplete="address-level2" disabled>
+              </div>
+              <div class="profile-item">
+                <label for="profileState">Estado (UF)</label>
+                <input id="profileState" name="estado" maxlength="2" autocomplete="address-level1" disabled>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="profile-address-fieldset">
+            <legend>Localização aproximada <span>(opcional)</span></legend>
+            <div class="profile-info">
+              <div class="profile-item">
+                <label for="profileLongitude">Longitude</label>
+                <input id="profileLongitude" name="longitude" type="number" min="-180" max="180" step="any" disabled>
+              </div>
+              <div class="profile-item">
+                <label for="profileLatitude">Latitude</label>
+                <input id="profileLatitude" name="latitude" type="number" min="-90" max="90" step="any" disabled>
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="profile-edit-actions">
+            <button id="profileEditBtn" class="btn-secondary" type="button">Editar</button>
+            <button id="profileSaveBtn" class="btn-add hidden" type="submit">Salvar alterações</button>
+            <button id="profileCancelBtn" class="btn-secondary hidden" type="button">Cancelar</button>
+          </div>
+          <p id="profileEditFeedback" class="auth-feedback" role="status" aria-live="polite"></p>
+        </form>
 
         <div class="form-actions">
           <a href="./publicar.html" class="btn-add">Publicar novo livro</a>
