@@ -29,11 +29,25 @@ const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
 
 let URL_BASE = URL_BASE_LOCAL;
+let carregamentoPerfilPublicacao = Promise.resolve(null);
 
 function formatarCep(valor) {
   const digitos = String(valor || '').replace(/\D/g, '');
   if (digitos.length !== 8) return '';
   return `${digitos.slice(0, 5)}-${digitos.slice(5)}`;
+}
+
+function geocodeValido(geocode) {
+  const coordenadas = geocode?.coordinates;
+  return geocode?.type === 'Point' &&
+    Array.isArray(coordenadas) &&
+    coordenadas.length === 2 &&
+    Number.isFinite(coordenadas[0]) &&
+    coordenadas[0] >= -180 &&
+    coordenadas[0] <= 180 &&
+    Number.isFinite(coordenadas[1]) &&
+    coordenadas[1] >= -90 &&
+    coordenadas[1] <= 90;
 }
 
 async function fetchComFallback(url, options = {}) {
@@ -54,8 +68,9 @@ async function fetchComFallback(url, options = {}) {
 async function preencherCepDoCadastro() {
   const token = localStorage.getItem('token');
   if (!token) {
-    cepPublicacaoFeedback.textContent = 'Entre na sua conta para preencher o CEP cadastrado.';
-    return;
+    cepPublicacaoFeedback.textContent = 'Entre na sua conta para carregar a localização do perfil.';
+    cepPublicacaoFeedback.classList.add('erro');
+    return null;
   }
 
   try {
@@ -68,20 +83,34 @@ async function preencherCepDoCadastro() {
 
     const perfil = await resposta.json();
     const cep = formatarCep(perfil.endereco?.cep);
-    if (cep) {
-      cepPublicacaoInput.value = cep;
-      cepPublicacaoFeedback.textContent = 'CEP carregado do seu cadastro. Somente o CEP será usado como localização do anúncio.';
-    } else {
-      cepPublicacaoFeedback.textContent = 'Não há um CEP válido no seu cadastro. Informe o CEP de origem do livro.';
+    cepPublicacaoInput.value = cep;
+
+    if (!cep || !geocodeValido(perfil.geocode)) {
+      cepPublicacaoFeedback.textContent = !cep
+        ? 'Cadastre um CEP no seu perfil para publicar livros.'
+        : 'Cadastre sua localização aproximada no perfil para publicar livros com busca por proximidade.';
+      cepPublicacaoFeedback.classList.add('erro');
+      return perfil;
     }
+
+    cepPublicacaoFeedback.textContent = 'CEP e localização aproximada carregados do seu perfil.';
+    cepPublicacaoFeedback.classList.remove('erro');
+    cepPublicacaoFeedback.classList.add('sucesso');
+    return perfil;
   } catch (erro) {
     console.error('Não foi possível carregar o CEP do cadastro:', erro);
-    cepPublicacaoFeedback.textContent = `${erro.message} Informe o CEP de origem manualmente.`;
+    cepPublicacaoFeedback.textContent = `${erro.message} Confira seu perfil e tente novamente.`;
+    cepPublicacaoFeedback.classList.add('erro');
+    return null;
   }
 }
 
+carregamentoPerfilPublicacao = preencherCepDoCadastro();
+
 if (cepPublicacaoInput && cepPublicacaoFeedback) {
-  preencherCepDoCadastro();
+  carregamentoPerfilPublicacao.catch(erro => {
+    console.error('Não foi possível carregar a localização do perfil:', erro);
+  });
 }
 
 function atualizarVisibilidadePreco() {
@@ -196,6 +225,16 @@ if (form) {
       window.location.href = './login.html';
       return;
     }
+    const perfil = await carregamentoPerfilPublicacao;
+    const cepPerfil = formatarCep(perfil?.endereco?.cep);
+    if (!cepPerfil || !geocodeValido(perfil?.geocode)) {
+      cepPublicacaoFeedback.textContent = !cepPerfil
+        ? 'Cadastre um CEP no seu perfil antes de publicar.'
+        : 'Cadastre sua localização aproximada no perfil antes de publicar.';
+      cepPublicacaoFeedback.classList.add('erro');
+      cepPublicacaoInput.focus();
+      return;
+    }
     if (!form.tipo.value) {
       alert('Selecione o tipo de anúncio.');
       return;
@@ -253,7 +292,7 @@ if (form) {
         interesses: interessesTroca,
         aceitaRetirada: form.aceitaRetirada.checked
       },
-      localizacao: form.localizacao.value.trim()
+      localizacao: cepPerfil
     };
 
     if (form.tipo.value === 'venda') {

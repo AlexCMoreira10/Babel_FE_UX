@@ -25,6 +25,7 @@ const profileSaveBtn = document.getElementById('profileSaveBtn');
 const profileCancelBtn = document.getElementById('profileCancelBtn');
 const profileEditFeedback = document.getElementById('profileEditFeedback');
 const addProfilePhoneBtn = document.getElementById('addProfilePhoneBtn');
+const retryLocationSyncBtn = document.getElementById('retryLocationSyncBtn');
 
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
@@ -32,6 +33,8 @@ const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
 let URL_BASE = URL_BASE_LOCAL;
 let perfilAtual = null;
 let modoEdicaoPerfil = false;
+let sincronizacaoLocalizacaoEmAndamento = false;
+let coordenadasLimpezaPorEndereco = false;
 
 async function fetchComFallback(url, options = {}) {
   try {
@@ -102,6 +105,7 @@ function adicionarCampoTelefone(telefone = '') {
 }
 
 function preencherFormularioPerfil(perfil) {
+  coordenadasLimpezaPorEndereco = false;
   const definirValor = (seletor, valor) => {
     const campo = profileForm.querySelector(seletor);
     if (campo) campo.value = valor ?? '';
@@ -127,6 +131,10 @@ function preencherFormularioPerfil(perfil) {
   definirValor('#profileState', endereco.estado);
   definirValor('#profileLongitude', coordenadas[0]);
   definirValor('#profileLatitude', coordenadas[1]);
+  retryLocationSyncBtn?.classList.toggle(
+    'hidden',
+    perfil.localizacaoSyncStatus !== 'pendente'
+  );
 }
 
 async function carregarDadosPerfil() {
@@ -142,17 +150,29 @@ async function carregarDadosPerfil() {
   }
 }
 
+function obterEnderecoFormularioPerfil() {
+  return Object.fromEntries(
+    ['rua', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep']
+      .map(campo => [campo, profileForm.elements.namedItem(campo).value.trim()])
+  );
+}
+
+function enderecoLocalizacaoMudou(endereco) {
+  const anterior = perfilAtual?.endereco || {};
+  return ['rua', 'numero', 'bairro', 'cidade', 'estado', 'cep'].some(campo =>
+    String(anterior[campo] ?? '').trim().toLocaleLowerCase('pt-BR') !==
+    String(endereco[campo] ?? '').trim().toLocaleLowerCase('pt-BR')
+  );
+}
+
 function obterDadosFormularioPerfil() {
   const telefone = [...profilePhoneList.querySelectorAll('input[name="profilePhone"]')]
     .map(input => input.value.trim())
     .filter(Boolean);
   const longitude = document.getElementById('profileLongitude').value;
   const latitude = document.getElementById('profileLatitude').value;
-  const endereco = Object.fromEntries(
-    ['rua', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep']
-      .map(campo => [campo, profileForm.elements.namedItem(campo).value.trim()])
-  );
-  const geocode = longitude === '' && latitude === ''
+  const endereco = obterEnderecoFormularioPerfil();
+  const geocode = enderecoLocalizacaoMudou(endereco) || (longitude === '' && latitude === '')
     ? null
     : {
         type: 'Point',
@@ -205,8 +225,15 @@ async function salvarPerfil(evento) {
     }));
 
     definirModoEdicaoPerfil(false);
-    profileEditFeedback.textContent = 'Seus dados foram atualizados com sucesso.';
-    profileEditFeedback.classList.add('sucesso');
+    profileEditFeedback.textContent = perfilAtual.avisoLocalizacao
+      || (perfilAtual.localizacaoSyncStatus === 'pendente'
+        ? 'O perfil foi salvo; a localização dos anúncios está pendente. Tente sincronizar novamente.'
+        : 'Seus dados foram atualizados com sucesso.');
+    profileEditFeedback.classList.add(
+      perfilAtual.avisoLocalizacao || perfilAtual.localizacaoSyncStatus === 'pendente'
+        ? 'erro'
+        : 'sucesso'
+    );
   } catch (erro) {
     console.error('Erro ao salvar dados pessoais:', erro);
     profileEditFeedback.textContent = erro.status === 400
@@ -215,6 +242,34 @@ async function salvarPerfil(evento) {
     profileEditFeedback.classList.add('erro');
   } finally {
     profileSaveBtn.disabled = false;
+  }
+}
+
+async function repetirSincronizacaoLocalizacao() {
+  if (sincronizacaoLocalizacaoEmAndamento) return;
+  sincronizacaoLocalizacaoEmAndamento = true;
+  retryLocationSyncBtn.disabled = true;
+  profileEditFeedback.classList.remove('erro', 'sucesso');
+  profileEditFeedback.textContent = 'Sincronizando a localização dos seus anúncios...';
+
+  try {
+    const resultado = await requisitarApiLivros('/me/localizacao/sincronizar', {
+      method: 'POST',
+      body: {}
+    });
+    perfilAtual.localizacaoSyncStatus = resultado.status;
+    preencherFormularioPerfil(perfilAtual);
+    profileEditFeedback.textContent = resultado.status === 'sincronizado'
+      ? `${resultado.anunciosAtualizados} anúncio(s) sincronizado(s).`
+      : 'A sincronização ainda está pendente. Tente novamente.';
+    profileEditFeedback.classList.add(resultado.status === 'sincronizado' ? 'sucesso' : 'erro');
+  } catch (erro) {
+    console.error('Erro ao repetir sincronização da localização:', erro);
+    profileEditFeedback.textContent = erro.message || 'Não foi possível sincronizar os anúncios.';
+    profileEditFeedback.classList.add('erro');
+  } finally {
+    sincronizacaoLocalizacaoEmAndamento = false;
+    retryLocationSyncBtn.disabled = false;
   }
 }
 
@@ -234,6 +289,30 @@ function inicializarEdicaoPerfil() {
   });
   addProfilePhoneBtn.addEventListener('click', () => adicionarCampoTelefone());
   profileForm.addEventListener('submit', salvarPerfil);
+  retryLocationSyncBtn?.addEventListener('click', repetirSincronizacaoLocalizacao);
+  ['rua', 'numero', 'bairro', 'cidade', 'estado', 'cep'].forEach(campo => {
+    profileForm.elements.namedItem(campo).addEventListener('input', () => {
+      if (!perfilAtual) return;
+      if (enderecoLocalizacaoMudou(obterEnderecoFormularioPerfil())) {
+        if (!coordenadasLimpezaPorEndereco) {
+          document.getElementById('profileLongitude').value = '';
+          document.getElementById('profileLatitude').value = '';
+          coordenadasLimpezaPorEndereco = true;
+        }
+        profileEditFeedback.classList.remove('sucesso', 'erro');
+        profileEditFeedback.textContent =
+          'O endereço mudou. Ao salvar, tentaremos obter coordenadas aproximadas pelo endereço/CEP; não usaremos o GPS atual.';
+        return;
+      }
+
+      if (coordenadasLimpezaPorEndereco) {
+        const coordenadas = perfilAtual.geocode?.coordinates || [];
+        document.getElementById('profileLongitude').value = coordenadas[0] ?? '';
+        document.getElementById('profileLatitude').value = coordenadas[1] ?? '';
+        coordenadasLimpezaPorEndereco = false;
+      }
+    });
+  });
 }
 
 function carregarPerfil() {

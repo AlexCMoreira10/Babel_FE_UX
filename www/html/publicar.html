@@ -149,8 +149,9 @@
 
           <div class="form-group">
             <label for="localizacao">CEP de origem</label>
-            <input id="localizacao" name="localizacao" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" pattern="[0-9]{5}-?[0-9]{3}" maxlength="9" title="Informe um CEP válido com 8 números." required>
-            <span id="cepPublicacaoFeedback" class="small-text" role="status" aria-live="polite">Buscando o CEP salvo no seu cadastro...</span>
+            <input id="localizacao" name="localizacao" type="text" autocomplete="postal-code" placeholder="00000-000" readonly aria-describedby="cepPublicacaoFeedback">
+            <span id="cepPublicacaoFeedback" class="small-text" role="status" aria-live="polite">Buscando CEP e localização aproximada do seu perfil...</span>
+            <span class="small-text">O CEP e as coordenadas são carregados do seu perfil e usados para localizar livros próximos. <a href="./perfil.html">Atualizar meu perfil</a></span>
           </div>
 
           <div class="form-group" style="grid-column: 1 / -1;">

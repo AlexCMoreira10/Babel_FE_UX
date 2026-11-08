@@ -109,6 +109,7 @@
 
           <fieldset class="profile-address-fieldset">
             <legend>Localização aproximada <span>(opcional)</span></legend>
+            <p class="small-text">Ao alterar o endereço, o sistema tentará obter coordenadas aproximadas pelo endereço ou CEP. A posição GPS atual do dispositivo não será usada automaticamente.</p>
             <div class="profile-info">
               <div class="profile-item">
                 <label for="profileLongitude">Longitude</label>
@@ -125,6 +126,7 @@
             <button id="profileEditBtn" class="btn-secondary" type="button">Editar</button>
             <button id="profileSaveBtn" class="btn-add hidden" type="submit">Salvar alterações</button>
             <button id="profileCancelBtn" class="btn-secondary hidden" type="button">Cancelar</button>
+            <button id="retryLocationSyncBtn" class="btn-secondary hidden" type="button">Sincronizar localização dos anúncios</button>
           </div>
           <p id="profileEditFeedback" class="auth-feedback" role="status" aria-live="polite"></p>
         </form>

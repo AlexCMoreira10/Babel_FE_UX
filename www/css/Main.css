@@ -186,6 +186,19 @@ ion-content {
   line-height: 1.5;
 }
 
+.form-group .small-text.erro {
+  color: #b42318;
+}
+
+.form-group .small-text.sucesso {
+  color: var(--primary-strong);
+}
+
+.form-group input[readonly] {
+  background: #f5faf9;
+  cursor: not-allowed;
+}
+
 .localizacao-acoes {
   display: flex;
   flex-wrap: wrap;
@@ -787,6 +800,7 @@ ion-content {
   border-radius: 22px;
   padding: 24px;
   display: flex;
+  flex-wrap: wrap;
   gap: 18px;
   align-items: center;
   box-shadow: 0 16px 40px rgba(15,23,42,0.06);
@@ -837,6 +851,59 @@ ion-content {
 .filtros button:hover {
   background: var(--primary);
   color: white;
+}
+
+.proximidade-controles {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.proximidade-controles label {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.proximidade-controles select {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: white;
+  color: var(--text);
+  font: inherit;
+}
+
+.proximidade-controles button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.proximidade-controles button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+#proximidadeFeedback {
+  flex-basis: 100%;
+  min-height: 20px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#proximidadeFeedback.erro {
+  color: #b42318;
 }
 
 .resultado-head {
@@ -1687,6 +1754,7 @@ ion-content {
   .btn-hero,
   .btn-secondary,
   .filtros button,
+  .proximidade-controles > *,
   .campo-busca {
     width: 100%;
   }
