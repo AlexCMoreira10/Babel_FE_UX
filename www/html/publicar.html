@@ -159,10 +159,18 @@
           </div>
 
           <div class="form-group" style="grid-column: 1 / -1;">
-            <label for="fotos">Fotos</label>
-            <input id="fotos" name="fotos" type="text" placeholder="https://... , https://...">
-            <span class="small-text">Cole URLs http:// ou https:// separados por vírgula. Imagens que não carregarem serão substituídas por um marcador.</span>
+            <label for="fotosArquivos">Enviar imagens do dispositivo</label>
+            <input id="fotosArquivos" name="fotosArquivos" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+            <span class="small-text">JPEG, PNG ou WebP; até 5 MB por imagem e 5 imagens no total.</span>
           </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="fotosExternas">Adicionar imagens por URL</label>
+            <textarea id="fotosExternas" name="fotosExternas" placeholder="https://exemplo.com/capa.jpg&#10;https://exemplo.com/contracapa.jpg"></textarea>
+            <span class="small-text">Cole URLs HTTPS públicas, uma por linha ou separadas por vírgula. Você pode combinar links e uploads (máximo de 5 imagens).</span>
+          </div>
+
+          <div id="fotosPreview" class="form-group" style="grid-column: 1 / -1;" aria-live="polite"></div>
 
           <fieldset class="form-group selection-group" style="grid-column: 1 / -1;">
             <legend>Interesses para troca</legend>

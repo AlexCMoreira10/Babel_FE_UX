@@ -10,6 +10,8 @@
 - npx cap sync 
 - npx cap open android
 
+- app/build/outputs/apk/debug/
+
 # API de Livros - Uso no Postman
 
 ## 1. Visão geral
