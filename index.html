@@ -501,12 +501,14 @@ window.salvarLivroSelecionado = function(id) {
 function criarCard(livro) {
   const tipo = livro.tipo || 'troca';
   const imagem = obterImagemLivro(livro);
-  const usuarioNome = livro.usuario?.displayName || livro.usuario?.nome || livro.usuario || livro.usuarioId || 'Anunciante';
+  const usuarioNome = livro.usuarioNome || livro.seboNome
+  || livro.usuario?.displayName || livro.usuario?.nome || 'Anunciante';
   const livroId = livro._id || livro.id || '';
   const detalhesHref = livroId ? `./html/detalhes.html?id=${livroId}` : '#';
   const detalhesOnclick = livroId ? `onclick="window.salvarLivroSelecionado('${livroId}')"` : '';
   const detalhesLabel = livroId ? 'Detalhes' : 'Sem detalhes';
   const localizacao = Number.isFinite(livro.distanciaKm)
+  
     ? `📍 Aproximadamente ${livro.distanciaKm.toFixed(1)} km de você`
     : `📍 ${livro.localizacao || 'Local não informado'}`;
   console.log('Gerando link de detalhes:', { titulo: livro.titulo, livroId });

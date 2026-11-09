@@ -12,26 +12,24 @@ let URL_BASE = window.location.hostname.includes('localhost') || window.location
   ? URL_BASE_LOCAL
   : URL_BASE_REMOTE;
 
-async function fetchComFallback(url, options = {}) {
-  const fetchComTimeout = async (urlRequisicao) => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
-    try {
-      return await fetch(urlRequisicao, { ...options, signal: controller.signal });
-    } finally {
-      clearTimeout(timeout);
-    }
-  };
-
+async function fetchComTimeout(urlRequisicao, options = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
   try {
-    const response = await fetchComTimeout(url);
-    return response;
+    return await fetch(urlRequisicao, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function fetchComFallback(url, options = {}) {
+  try {
+    return await fetchComTimeout(url, options);
   } catch (erro) {
-    if (URL_BASE === URL_BASE_LOCAL && url.includes(URL_BASE_LOCAL)) {
+    if (url.startsWith(URL_BASE_LOCAL)) {
       console.warn(`Falha ao conectar em ${URL_BASE_LOCAL}, tentando ${URL_BASE_REMOTE}...`);
       URL_BASE = URL_BASE_REMOTE;
-      const urlRemota = url.replace(URL_BASE_LOCAL, URL_BASE_REMOTE);
-      return fetchComTimeout(urlRemota);
+      return fetchComTimeout(url.replace(URL_BASE_LOCAL, URL_BASE_REMOTE), options);
     }
     throw erro;
   }
@@ -262,28 +260,22 @@ function renderizarDetalhes(livro) {
   document.getElementById('localizacao').querySelector('span').textContent = livro.localizacao || 'Não informada';
 
   // Anunciante
+  // Anunciante
   const nomeAnunciante = document.getElementById('nomeAnunciante');
   const emailAnunciante = document.getElementById('emailAnunciante');
-  
-  if (livro.usuario) {
-    if (typeof livro.usuario === 'object') {
-      const nome = livro.usuario.displayName || livro.usuario.nome || 'Anunciante';
-      nomeAnunciante.textContent = nome;
-      emailAnunciante.textContent = livro.usuario.email || 'email@example.com';
-      contatoDestinatarioNome = nome;
-      contatoDestinatarioId = livro.usuario._id || livro.usuario.uid || livro.usuario.id || livro.usuario.email || null;
-    } else {
-      nomeAnunciante.textContent = livro.usuario;
-      emailAnunciante.textContent = 'Contatar via plataforma';
-      contatoDestinatarioNome = livro.usuario;
-      contatoDestinatarioId = livro.usuarioId || livro.usuario || null;
-    }
-  } else {
-    nomeAnunciante.textContent = livro.usuarioId || 'Anunciante';
-    emailAnunciante.textContent = 'Contatar via plataforma';
-    contatoDestinatarioNome = livro.usuarioId || 'Anunciante';
-    contatoDestinatarioId = livro.usuarioId || null;
-  }
+
+  const usuarioObj = livro.usuario && typeof livro.usuario === 'object' ? livro.usuario : null;
+  const nomeExibido = livro.usuarioNome
+    || livro.seboNome
+    || usuarioObj?.displayName
+    || usuarioObj?.nome
+    || 'Anunciante';
+
+  nomeAnunciante.textContent = nomeExibido;
+  emailAnunciante.textContent = usuarioObj?.email
+    || (livro.seboId ? 'Sebo parceiro' : 'Contatar via plataforma');
+  contatoDestinatarioNome = nomeExibido;
+  contatoDestinatarioId = usuarioObj?.uid || usuarioObj?._id || usuarioObj?.id || livro.usuarioId || null;
   contatoLivroId = livro.id || livro._id || params.get('id');
 
   // Informações de troca

@@ -12,8 +12,7 @@ async function fetchComFallback(url, options = {}) {
   try {
     return await fetch(url, options);
   } catch (erro) {
-    if (URL_BASE === URL_BASE_LOCAL && url.includes(URL_BASE_LOCAL)) {
-      console.warn(`Falha ao conectar em ${URL_BASE_LOCAL}, tentando ${URL_BASE_REMOTE}...`);
+    if (url.startsWith(URL_BASE_LOCAL)) {
       URL_BASE = URL_BASE_REMOTE;
       return fetch(url.replace(URL_BASE_LOCAL, URL_BASE_REMOTE), options);
     }
