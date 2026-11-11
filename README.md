@@ -89,6 +89,15 @@ nome exato, inclusive maiúsculas e minúsculas. A API de proximidade aceita
 apenas título e tipo: para ativá-la, selecione **Título**. Busca parcial por
 autor combinada com proximidade depende de suporte futuro no backend.
 
+Na publicação e edição de anúncios, **Tirar foto do livro** solicita a câmera
+do dispositivo pelo seletor nativo do navegador ou do Capacitor. A foto aparece
+com as imagens da galeria e segue os mesmos limites: JPEG, PNG ou WebP, até
+5 MB por arquivo e cinco imagens no total, incluindo URLs e imagens mantidas.
+É possível remover cada foto capturada antes de salvar. A disponibilidade da
+câmera, a solicitação de permissão e a notificação de cancelamento dependem
+do dispositivo e do navegador; se a câmera não abrir, confira as permissões.
+No computador, o botão pode abrir o seletor de arquivos.
+
 # Build para celular
 - bash 
 - npm init -y

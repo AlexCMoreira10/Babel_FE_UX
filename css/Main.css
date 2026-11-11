@@ -423,6 +423,30 @@ ion-content {
   font-size: 13px;
 }
 
+.camera-btn {
+  width: fit-content;
+  max-width: 100%;
+  border: 0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.imagem-selecionada {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  overflow-wrap: anywhere;
+}
+
+.imagem-selecionada img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
 .selection-group {
   min-width: 0;
   border: 0;
@@ -2208,6 +2232,26 @@ ion-content {
 
 .profile-sidebar button:hover {
   background: rgba(180, 35, 24, 0.08);
+}
+
+.profile-sidebar .profile-scan-btn {
+  color: white;
+  background: var(--accent);
+}
+
+.profile-sidebar .profile-scan-btn:hover {
+  background: var(--accent);
+  filter: brightness(0.94);
+}
+
+.profile-sidebar #scanFeedback {
+  grid-column: 1 / -1;
+  margin: 0 12px;
+  overflow-wrap: anywhere;
+}
+
+.profile-sidebar #scanFeedback:empty {
+  display: none;
 }
 
 .profile-sidebar a ion-icon {

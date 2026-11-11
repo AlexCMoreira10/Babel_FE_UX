@@ -1,4 +1,5 @@
 import { resolverUrlImagem } from './image-utils.js';
+import { configurarSelecaoImagens } from './selecao-imagens.mjs';
 import {
   aguardarUsuarioFirebase,
   enviarImagensLivro,
@@ -122,24 +123,16 @@ function obterFotosMantidas() {
   return fotosExistentes.filter((_, index) => !indicesRemovidos.has(index));
 }
 
-function atualizarPreviewNovasFotos() {
-  fotosNovasPreview.replaceChildren();
-  const arquivos = Array.from(fotosArquivosInput.files || []);
-  const urls = obterUrlsExternas();
-  const totalAtual = obterFotosMantidas().length;
-
-  const contador = document.createElement('span');
-  contador.className = 'small-text';
-  contador.textContent = `${totalAtual + arquivos.length + urls.length} de 5 imagens após salvar`;
-  fotosNovasPreview.append(contador);
-
-  for (const arquivo of arquivos) {
-    const item = document.createElement('p');
-    item.className = 'small-text';
-    item.textContent = arquivo.name;
-    fotosNovasPreview.append(item);
-  }
-}
+const selecaoImagens = configurarSelecaoImagens({
+  inputGaleria: fotosArquivosInput,
+  inputCamera: document.getElementById('fotoCamera'),
+  botaoCamera: document.getElementById('tirarFotoBtn'),
+  feedback: document.getElementById('fotoCameraFeedback'),
+  preview: fotosNovasPreview,
+  obterTotalExistente: () => obterFotosMantidas().length + obterUrlsExternas().length,
+  textoContador: total => `${total} de 5 imagens após salvar`,
+  validarArquivos: validarArquivosImagem
+});
 
 const params = new URLSearchParams(window.location.search);
 const livroId = params.get('id');
@@ -154,9 +147,8 @@ tipoSelect.addEventListener('change', () => {
   precoGroup.style.display = tipoSelect.value === 'venda' ? 'block' : 'none';
   precoInput.required = tipoSelect.value === 'venda';
 });
-fotosAtuaisContainer.addEventListener('change', atualizarPreviewNovasFotos);
-fotosArquivosInput.addEventListener('change', atualizarPreviewNovasFotos);
-fotosExternasInput.addEventListener('input', atualizarPreviewNovasFotos);
+fotosAtuaisContainer.addEventListener('change', selecaoImagens.atualizarPreview);
+fotosExternasInput.addEventListener('input', selecaoImagens.atualizarPreview);
 
 formAtualizar.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -189,7 +181,7 @@ formAtualizar.addEventListener('submit', async (event) => {
   let arquivosImagem;
   try {
     arquivosImagem = validarArquivosImagem(
-      fotosArquivosInput.files,
+      selecaoImagens.arquivosSelecionados(),
       fotosMantidas.length + fotosExternasNovas.length
     );
   } catch (erro) {
@@ -401,7 +393,7 @@ async function carregarLivro() {
     descricaoInput.value = livro.descricao || '';
     fotosExistentes = toStringArray(livro.fotos);
     renderizarFotosExistentes();
-    atualizarPreviewNovasFotos();
+    selecaoImagens.atualizarPreview();
     generosInput.value = Array.isArray(livro.generos) ? livro.generos.join(', ') : livro.generos || '';
     trocasInput.value = Array.isArray(livro.trocas?.interesses) ? livro.trocas.interesses.join(', ') : livro.trocas?.interesses || '';
     aceitaRetiradaInput.checked = livro.trocas?.aceitaRetirada ?? false;

@@ -1,4 +1,5 @@
 import { salvarQrLivro } from './books-api.js';
+import { configurarSelecaoImagens } from './selecao-imagens.mjs';
 import {
   aguardarUsuarioFirebase,
   enviarImagensLivro,
@@ -164,22 +165,16 @@ function validarUrlsExternas(urls) {
   return invalidas;
 }
 
-function atualizarPreviewFotos() {
-  fotosPreview.replaceChildren();
-  const arquivos = Array.from(fotosArquivosInput.files || []);
-  const urls = obterUrlsExternas();
-  const contador = document.createElement('span');
-  contador.className = 'small-text';
-  contador.textContent = `${arquivos.length + urls.length} de 5 imagens selecionadas`;
-  fotosPreview.append(contador);
-
-  for (const arquivo of arquivos) {
-    const item = document.createElement('p');
-    item.className = 'small-text';
-    item.textContent = arquivo.name;
-    fotosPreview.append(item);
-  }
-}
+const selecaoImagens = configurarSelecaoImagens({
+  inputGaleria: fotosArquivosInput,
+  inputCamera: document.getElementById('fotoCamera'),
+  botaoCamera: document.getElementById('tirarFotoBtn'),
+  feedback: document.getElementById('fotoCameraFeedback'),
+  preview: fotosPreview,
+  obterTotalExistente: () => obterUrlsExternas().length,
+  textoContador: total => `${total} de 5 imagens selecionadas`,
+  validarArquivos: validarArquivosImagem
+});
 
 function obterSelecoesComOutro(nomeGrupo, campoOutro) {
   const selecoes = Array.from(form.querySelectorAll(`input[name="${nomeGrupo}"]:checked`))
@@ -209,9 +204,8 @@ idiomaSelect.addEventListener('change', () => {
 });
 configurarCampoOutro('generos', generoOutroInput);
 configurarCampoOutro('trocasInteresses', interesseOutroInput);
-fotosArquivosInput.addEventListener('change', atualizarPreviewFotos);
-fotosExternasInput.addEventListener('input', atualizarPreviewFotos);
-atualizarPreviewFotos();
+fotosExternasInput.addEventListener('input', selecaoImagens.atualizarPreview);
+selecaoImagens.atualizarPreview();
 
 if (form) {
   const submitBtn = form.querySelector('button[type="submit"]');
@@ -257,7 +251,7 @@ if (form) {
 
     let arquivosImagem;
     try {
-      arquivosImagem = validarArquivosImagem(fotosArquivosInput.files, fotosExternas.length);
+      arquivosImagem = validarArquivosImagem(selecaoImagens.arquivosSelecionados(), fotosExternas.length);
     } catch (erro) {
       alert(erro.message);
       fotosArquivosInput.focus();
