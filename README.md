@@ -98,19 +98,43 @@ câmera, a solicitação de permissão e a notificação de cancelamento depende
 do dispositivo e do navegador; se a câmera não abrir, confira as permissões.
 No computador, o botão pode abrir o seletor de arquivos.
 
-# Build para celular
-- bash 
-- npm init -y
-- npm install @capacitor/core @capacitor/cli
-- npm install @capacitor/android
+# Build e ícone Android
 
-- npx cap init "babel" "com.alexcmoreira.babel" --web-dir='www'
-- npx cap add android
-- npx cap copy
-- npx cap sync 
-- npx cap open android
+O ícone original está em `resources/icon.png` (1024 × 1024).
+`npm run android:icons` usa `@capacitor/assets` para gerar os ícones normais,
+redondos e adaptativos a partir dessa imagem. O comando substitui **somente**
+os arquivos `ic_launcher*` nas pastas `mipmap`; faça backup deles se tiver
+alterações locais que queira preservar. O gerador trabalha em uma pasta
+temporária e não substitui o manifesto nem os recursos de splash.
 
-- app/build/outputs/apk/debug/
+Grande parte do projeto `android/` é ignorada pelo Git. Em um clone novo,
+o diretório já existe parcialmente, portanto `npx cap add android` diretamente
+na raiz falha. Gere primeiro um esqueleto separado e copie apenas os arquivos
+ausentes (Linux, com Node.js e Android SDK instalados):
+
+```bash
+npm ci
+npm run build
+STAGING="$(mktemp -d)"
+cp capacitor.config.json package.json "$STAGING/"
+cp -a www "$STAGING/"
+ln -s "$PWD/node_modules" "$STAGING/node_modules"
+(cd "$STAGING" && npx cap add android)
+cp -an "$STAGING/android/." android/
+npm run android:icons
+npx cap sync android
+cd android
+./gradlew :app:assembleDebug
+```
+
+O esqueleto não substitui os arquivos Android já existentes, mas contém os
+recursos padrão do Capacitor para os arquivos ignorados: revise configurações,
+splash e eventuais integrações nativas antes de distribuição. Arquivos privados,
+como `google-services.json` e `local.properties`, não são recriados pelo
+repositório e devem ser configurados separadamente quando necessários.
+`npx cap sync android` substitui os assets web gerados do projeto Android;
+preserve alterações locais neles antes de executar. O APK debug fica em
+`android/app/build/outputs/apk/debug/app-debug.apk`.
 
 # API de Livros - Uso no Postman
 

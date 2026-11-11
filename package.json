@@ -8,7 +8,8 @@
     "check": "npm run check:web",
     "check:web": "node scripts/web-build.js --check",
     "test": "node --test test/*.test.js",
-    "test:server": "node scripts/test-server.js"
+    "test:server": "node scripts/test-server.js",
+    "android:icons": "node scripts/android-icons.js"
   },
   "repository": {
     "type": "git",

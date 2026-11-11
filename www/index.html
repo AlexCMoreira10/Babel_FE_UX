@@ -508,7 +508,7 @@ function criarCard(livro) {
   const detalhesOnclick = livroId ? `onclick="window.salvarLivroSelecionado('${livroId}')"` : '';
   const detalhesLabel = livroId ? 'Detalhes' : 'Sem detalhes';
   const localizacao = Number.isFinite(livro.distanciaKm)
-  
+
     ? `📍 Aproximadamente ${livro.distanciaKm.toFixed(1)} km de você`
     : `📍 ${livro.localizacao || 'Local não informado'}`;
   console.log('Gerando link de detalhes:', { titulo: livro.titulo, livroId });
