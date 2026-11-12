@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="io.capawesome.capacitorjs.plugins.firebase.authentication" >
+
+    <uses-sdk android:minSdkVersion="24" />
+    <!-- Required to detect installed browsers on Android 11 and up, where package visibility filtering hides them otherwise. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+
+            <category android:name="android.intent.category.BROWSABLE" />
+
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
+</manifest>

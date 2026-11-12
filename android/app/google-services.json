@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "537037438052",
+    "project_id": "babel-5dcbd",
+    "storage_bucket": "babel-5dcbd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:537037438052:android:5943a1d1a2b5d525b73371",
+        "android_client_info": {
+          "package_name": "com.estante.babel"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "537037438052-3udfjk496j2qah0j7ue7d4vvrhbupege.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.estante.babel",
+            "certificate_hash": "0d1b69a49d2cf95fd9a9eb68098647ceeddf2f84"
+          }
+        },
+        {
+          "client_id": "537037438052-v777u4gtg8n0j26uq5jpv1dcpevfkbm6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFUuLebPkbZHQhtccjVUePrRDWXFToIBY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "537037438052-v777u4gtg8n0j26uq5jpv1dcpevfkbm6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

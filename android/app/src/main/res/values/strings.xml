@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Babel</string>
+    <string name="title_activity_main">Babel</string>
+    <string name="package_name">com.estante.babel</string>
+    <string name="custom_url_scheme">com.estante.babel</string>
+</resources>
