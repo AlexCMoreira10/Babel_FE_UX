@@ -96,9 +96,7 @@ async function salvarSessao(usuario) {
 }
 
 async function entrarComGoogleAndroid() {
-  const { FirebaseAuthentication } = await import(
-    "https://unpkg.com/@capacitor-firebase/authentication@8.5.2/dist/esm/index.js"
-  );
+  const { FirebaseAuthentication } = await import("@capacitor-firebase/authentication");
   const resultadoNativo = await FirebaseAuthentication.signInWithGoogle();
   const idTokenGoogle = resultadoNativo.credential?.idToken;
 
