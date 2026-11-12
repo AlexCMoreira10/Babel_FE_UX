@@ -1,4 +1,5 @@
 import { resolverUrlImagem } from './image-utils.js';
+import { obterTokenValido } from './auth-token.js';
 import {
   aguardarUsuarioFirebase,
   enviarImagensLivro,
@@ -160,7 +161,7 @@ fotosExternasInput.addEventListener('input', atualizarPreviewNovasFotos);
 
 formAtualizar.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const token = localStorage.getItem('token');
+  const token = await obterTokenValido();
   let usuarioLocal = null;
   try {
     usuarioLocal = JSON.parse(localStorage.getItem('usuario') || 'null');
@@ -369,7 +370,7 @@ formAtualizar.addEventListener('submit', async (event) => {
 
 async function carregarLivro() {
   try {
-    const token = localStorage.getItem('token');
+    const token = await obterTokenValido();
     if (!token) {
       updateMessage.textContent = 'Você precisa estar logado para editar o anúncio.';
       return;

@@ -3,6 +3,7 @@ import {
   obterQrLivroPublicadoRecentemente,
   requisitarApiLivros
 } from './books-api.js';
+import { obterTokenValido } from './auth-token.js';
 import { resolverUrlImagem } from './image-utils.js';
 
 const perfilEmail = document.getElementById('perfilEmail');
@@ -358,7 +359,7 @@ async function carregarAnuncios(usuario) {
   profileSectionMessage.textContent = 'Carregando seus anúncios...';
   profileAdsGrid.innerHTML = '';
 
-  const token = localStorage.getItem('token');
+  const token = await obterTokenValido();
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -403,7 +404,7 @@ async function carregarNotificacoes() {
   notificationsMessage.textContent = 'Carregando notificações...';
   notificationsList.innerHTML = '';
 
-  const token = localStorage.getItem('token');
+  const token = await obterTokenValido();
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -465,7 +466,7 @@ function criarCardNotificacao(notificacao) {
 async function marcarNotificacaoLida(notificacaoId) {
   if (!notificacaoId) return;
 
-  const token = localStorage.getItem('token');
+  const token = await obterTokenValido();
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
 

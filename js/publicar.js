@@ -1,4 +1,5 @@
 import { salvarQrLivro } from './books-api.js';
+import { obterTokenValido } from './auth-token.js';
 import {
   aguardarUsuarioFirebase,
   enviarImagensLivro,
@@ -66,7 +67,7 @@ async function fetchComFallback(url, options = {}) {
 }
 
 async function preencherCepDoCadastro() {
-  const token = localStorage.getItem('token');
+  const token = await obterTokenValido();
   if (!token) {
     cepPublicacaoFeedback.textContent = 'Entre na sua conta para carregar a localização do perfil.';
     cepPublicacaoFeedback.classList.add('erro');
@@ -219,7 +220,7 @@ if (form) {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    const token = localStorage.getItem('token');
+    const token = await obterTokenValido();
     if (!token) {
       alert('Você precisa estar logado para publicar um livro.');
       window.location.href = './login.html';

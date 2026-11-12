@@ -1,3 +1,5 @@
+import { obterTokenValido } from './auth-token.js';
+
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
 
@@ -39,7 +41,7 @@ export function obterQrLivroPublicadoRecentemente() {
 }
 
 export async function requisitarApiLivros(path, { method = 'GET', body, autenticado = true } = {}) {
-  const token = localStorage.getItem('token');
+  const token = await obterTokenValido();
   if (autenticado && !token) {
     const erro = new Error('Entre na sua conta para continuar.');
     erro.status = 401;

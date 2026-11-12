@@ -2,6 +2,7 @@
  * Sistema de mensagens da plataforma.
  * Gerencia conversas, histórico paginado, leitura e envio de mensagens.
  */
+import { obterTokenValido } from './auth-token.js';
 
 const URL_BASE_LOCAL = 'http://localhost:3000/api';
 const URL_BASE_REMOTE = 'https://babel-be-lovat.vercel.app/api';
@@ -59,8 +60,8 @@ function verificarLogin() {
   }
 }
 
-function obterHeaders(json = false) {
-  const token = localStorage.getItem('token');
+async function obterHeaders(json = false) {
+  const token = await obterTokenValido();
   if (!token) {
     throw new Error('Sua sessão expirou. Entre novamente para acessar as mensagens.');
   }
@@ -74,7 +75,7 @@ function obterHeaders(json = false) {
 async function requisitarJson(url, options = {}) {
   const resposta = await fetchComFallback(url, {
     ...options,
-    headers: { ...obterHeaders(Boolean(options.body)), ...options.headers }
+    headers: { ...(await obterHeaders(Boolean(options.body))), ...options.headers }
   });
 
   if (!resposta.ok) {

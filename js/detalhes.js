@@ -1,4 +1,5 @@
 import { normalizarUrlImagem, resolverUrlImagem } from './image-utils.js';
+import { obterTokenValido } from './auth-token.js';
 import {
   buscarLivroNoCatalogo,
   buscarRecomendacoesPorGenero,
@@ -39,7 +40,9 @@ async function fetchComFallback(url, options = {}) {
 const params = new URLSearchParams(window.location.search);
 const livroId = params.get('id');
 
-const token = localStorage.getItem('token');
+// Presença de sessão apenas para decisões de UI síncronas;
+// as requisições usam um token renovado via obterTokenValido().
+const sessaoAtiva = !!localStorage.getItem('token');
 
 // Elementos
 const carregandoDetalhes = document.getElementById('carregandoDetalhes');
@@ -137,10 +140,10 @@ async function carregarDetalhesLivro() {
 
   try {
     const livro = await carregarDetalheComFallback({
-      token,
+      token: sessaoAtiva,
       carregarAutenticado: async () => {
         const resposta = await fetchComFallback(`${URL_BASE}/livros/${encodeURIComponent(livroId)}`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${await obterTokenValido()}` }
         });
         if (!resposta.ok) {
           const textoErro = await resposta.text();
@@ -305,8 +308,8 @@ function renderizarDetalhes(livro) {
 async function atualizarConexaoMelhorEnvio() {
   if (!conectarMelhorEnvio || !conectarMelhorEnvioBtn) return;
   conectarMelhorEnvio.hidden = false;
-  conectarMelhorEnvioBtn.disabled = !token;
-  if (!token) {
+  conectarMelhorEnvioBtn.disabled = !sessaoAtiva;
+  if (!sessaoAtiva) {
     if (melhorEnvioStatus) {
       melhorEnvioStatus.textContent = 'Entre na sua conta da Estante para conectar o Melhor Envio.';
     }
@@ -315,7 +318,7 @@ async function atualizarConexaoMelhorEnvio() {
 
   try {
     const resposta = await fetchComFallback(`${URL_BASE}/melhor-envio/status`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${await obterTokenValido()}` }
     });
     const dados = await resposta.json().catch(() => null);
     if (!resposta.ok) {
@@ -357,7 +360,7 @@ if (conectarMelhorEnvioBtn) {
     try {
       const resposta = await fetchComFallback(`${URL_BASE}/melhor-envio/authorize`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${await obterTokenValido()}` }
       });
       const dados = await resposta.json().catch(() => null);
       if (!resposta.ok || !dados?.url) {
@@ -545,7 +548,7 @@ async function enviarMensagemContato() {
     return;
   }
 
-  const token = localStorage.getItem('token');
+  const token = await obterTokenValido();
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
 
